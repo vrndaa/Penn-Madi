@@ -11,19 +11,24 @@ PFont headingFont;
 PFont headingItalicFont;
 
 // Page layout (computed in setup once the screen size is known)
-float PAGE_BORDER = 26;
+float INNER = 60;   // equal inner margin on all four sides
 float dividerX, leftColX, leftColRight, rightColX, rightColRight;
-
-// Pattamadai pai palette (traditional red / green / black on straw)
-final color PAI_STRAW = color(232, 222, 184);
-final color PAI_RED   = color(200, 45, 45);
-final color PAI_GREEN = color(40, 130, 70);
-final color PAI_DARK  = color(34, 28, 22);   // the "black" stripe of a pai
 
 // Page theme (beige cloth ground; dark thread for text + lattice)
 color BG     = color(235, 226, 202);
 color INK    = color(45, 38, 30);
 color SUBINK = color(95, 84, 66);
+
+// Ikat border palette (pink)
+color IKAT_PINK  = color(224, 66, 140);
+color IKAT_LIGHT = color(248, 216, 230);
+
+// One base hue per metric (from the uploaded swatch palette).
+// Rural = a darker tone of the hue, Urban = a lighter tone.
+color[] metricBase;
+
+color rural(color base) { return lerpColor(base, color(0), 0.30); }   // darker
+color urban(color base) { return lerpColor(base, color(255), 0.33); } // lighter
 
 // Stitch segments recorded each frame so we can show a tooltip on hover
 class Segment {
@@ -48,11 +53,20 @@ void setup() {
   headingItalicFont = new PFont(new Font("Serif", Font.ITALIC, 48), true); // italic serif for "Penn"
 
   // Two-column layout: text on the left, visualization on the right
-  dividerX     = width * 0.40;
-  leftColX     = 60;
-  leftColRight = dividerX - 34;
-  rightColX    = dividerX + 34;
-  rightColRight = width - PAGE_BORDER - 22;
+  dividerX      = width * 0.40;
+  leftColX      = INNER;
+  leftColRight  = dividerX - 34;
+  rightColX     = dividerX + 34;
+  rightColRight = width - INNER;
+
+  // Metric hues (order: literate, schooling, attended, cash, house/land, bank)
+  metricBase = new color[6];
+  metricBase[0] = color(200, 45, 60);   // red
+  metricBase[1] = color(150, 80, 165);  // purple
+  metricBase[2] = color(235, 110, 55);  // orange
+  metricBase[3] = color(30, 100, 100);  // teal
+  metricBase[4] = color(170, 50, 105);  // magenta / wine
+  metricBase[5] = color(90, 60, 140);   // indigo
 
   table = loadTable("Urban Rural Data Cleaned.csv", "header");
 
@@ -73,18 +87,48 @@ void setup() {
 void draw() {
   background(BG); // beige cloth background
   segments.clear();
-  drawPaiBorder();     // Pattamadai striped frame around the page
-  drawHeading();       // left column: title + description
-  drawLegend();        // left column: how to read
-  drawStripeDivider(); // three pai stripes between the columns
-  drawSections();      // right column: the visualization
+  drawIkatBorder();  // pink ikat frame around the page
+  drawHeading();     // left column: title + description
+  drawLegend();      // left column: how to read
+  drawSections();    // right column: the visualization
   drawTooltip();
 }
 
-// ---- Left column: title + description -------------------------------------
+// ---- Pink ikat border around the page -------------------------------------
+void drawIkatBorder() {
+  float bw = 30; // band width
+  noStroke();
+  fill(IKAT_PINK);
+  rect(0, 0, width, bw);              // top
+  rect(0, height - bw, width, bw);    // bottom
+  rect(0, 0, bw, height);             // left
+  rect(width - bw, 0, bw, height);    // right
+
+  float d = bw * 0.72; // diamond size
+  for (float cx = bw; cx < width - bw + 1; cx += bw) {
+    diamond(cx, bw / 2, d);
+    diamond(cx, height - bw / 2, d);
+  }
+  for (float cy = bw; cy < height - bw + 1; cy += bw) {
+    diamond(bw / 2, cy, d);
+    diamond(width - bw / 2, cy, d);
+  }
+}
+
+// A light ikat diamond with a small pink core
+void diamond(float cx, float cy, float s) {
+  noStroke();
+  fill(IKAT_LIGHT);
+  quad(cx, cy - s / 2, cx + s / 2, cy, cx, cy + s / 2, cx - s / 2, cy);
+  fill(IKAT_PINK);
+  float t = s * 0.42;
+  quad(cx, cy - t / 2, cx + t / 2, cy, cx, cy + t / 2, cx - t / 2, cy);
+}
+
+// ---- Left column: title + description --------------------------------------
 void drawHeading() {
   float sz = 40;
-  float titleY = 44;
+  float titleY = INNER;
   textAlign(LEFT, TOP);
 
   // Title: italic "Penn" + regular "-madi"
@@ -110,7 +154,7 @@ void drawHeading() {
   text(desc, leftColX, titleY + 52, leftColRight - leftColX, 200);
 }
 
-// ---- Left column: how-to-read legend --------------------------------------
+// ---- Left column: how-to-read legend ---------------------------------------
 void drawLegend() {
   float lx = leftColX;
   float lw = leftColRight - leftColX;
@@ -126,23 +170,23 @@ void drawLegend() {
   textFont(bodyFont);
   fill(SUBINK);
   textSize(13);
-  text("Each cell is a state. Every thread is one statistic — the longer the thread, the higher the percentage.",
-    lx, y, lw, 60);
-  y += 54;
+  text("Each cell is a state. Every thread is one statistic — the longer the thread, the higher "
+    + "the percentage.  Darker tone = rural, lighter tone = urban.", lx, y, lw, 70);
+  y += 66;
 
   fill(INK);
   textSize(13);
   text("Horizontal threads   ·   rural / urban", lx, y); y += 22;
-  y = legendRow(lx, y, "Women literate", true, color(255, 255, 100), color(100, 255, 100));
-  y = legendRow(lx, y, "10+ years of schooling", true, color(255, 105, 180), color(220, 150, 255));
-  y = legendRow(lx, y, "Attended school (age 6+)", true, color(255, 200, 100), color(100, 200, 255));
+  y = legendRow(lx, y, "Women literate", metricBase[0]);
+  y = legendRow(lx, y, "10+ years of schooling", metricBase[1]);
+  y = legendRow(lx, y, "Attended school (age 6+)", metricBase[2]);
 
   y += 12;
   fill(INK);
-  text("Vertical threads", lx, y); y += 22;
-  y = legendRow(lx, y, "Worked & paid in cash", false, color(158, 168, 41), 0);
-  y = legendRow(lx, y, "Owns a house / land", false, color(110, 84, 15), 0);
-  y = legendRow(lx, y, "Bank / savings account", false, color(255, 0, 255), 0);
+  text("Vertical threads   ·   rural / urban", lx, y); y += 22;
+  y = legendRow(lx, y, "Worked & paid in cash", metricBase[3]);
+  y = legendRow(lx, y, "Owns a house / land", metricBase[4]);
+  y = legendRow(lx, y, "Bank / savings account", metricBase[5]);
 
   y += 12;
   fill(SUBINK);
@@ -150,66 +194,33 @@ void drawLegend() {
   text("Hover over any thread to read its exact value.", lx, y, lw, 40);
 }
 
-// One legend row: a colour swatch (or a rural/urban pair) plus a label
-float legendRow(float lx, float y, String label, boolean pair, color c1, color c2) {
+// One legend row: dark (rural) + light (urban) swatch of a metric hue, then label
+float legendRow(float lx, float y, String label, color base) {
   float swLen = 22;
-  strokeWeight(2);
-  stroke(c1);
+  strokeWeight(3);
+  stroke(rural(base));
   line(lx, y + 7, lx + swLen, y + 7);
-  float textX = lx + swLen + 12;
-  if (pair) {
-    stroke(c2);
-    line(lx + swLen + 6, y + 7, lx + swLen * 2 + 6, y + 7);
-    textX = lx + swLen * 2 + 16;
-  }
+  stroke(urban(base));
+  line(lx + swLen + 6, y + 7, lx + swLen * 2 + 6, y + 7);
+
   noStroke();
   fill(INK);
   textAlign(LEFT, TOP);
   textSize(13);
-  text(label, textX, y);
+  text(label, lx + swLen * 2 + 16, y);
   return y + 21;
 }
 
-// ---- Three pai stripes dividing the two columns ---------------------------
-void drawStripeDivider() {
-  float yTop = PAGE_BORDER + 24;
-  float yBot = height - PAGE_BORDER - 24;
-  color[] stripes = { PAI_RED, PAI_DARK, PAI_GREEN };
-  strokeWeight(1);
-  for (int i = 0; i < 3; i++) {
-    float sx = dividerX + (i - 1) * 7; // -7, 0, +7 around the divider line
-    stroke(stripes[i]);
-    stitchLine(sx, yTop, sx, yBot);
-  }
-}
-
-// ---- Pattamadai striped border around the page ----------------------------
-void drawPaiBorder() {
-  paiFrame(PAGE_BORDER,      PAI_RED);   // red stripe
-  paiFrame(PAGE_BORDER + 6,  PAI_DARK);  // black stripe
-  paiFrame(PAGE_BORDER + 12, PAI_GREEN); // green stripe
-}
-
-void paiFrame(float m, color c) {
-  stroke(c);
-  strokeWeight(1);
-  float L = m, R = width - m, T = m, B = height - m;
-  stitchLine(L, T, R, T);
-  stitchLine(R, T, R, B);
-  stitchLine(R, B, L, B);
-  stitchLine(L, B, L, T);
-}
-
-// ---- The visualization (right column) -------------------------------------
+// ---- The visualization (right column) --------------------------------------
 void drawSections() {
   int n = drawRows.size();
   int cols = ceil(sqrt(n));            // arrange into a near-square grid...
   int rows = ceil((float) n / cols);   // ...with no trailing empty cells
 
-  // Fit a square-celled grid into the right column
+  // Fit a square-celled grid into the right column, centered (equal top/bottom)
   float availW = rightColRight - rightColX;
-  float y1 = 120;
-  float y2 = height - PAGE_BORDER - 24;
+  float y1 = INNER;
+  float y2 = height - INNER;
   float availH = y2 - y1;
   float cell = min(availW / cols, availH / rows);
 
@@ -248,79 +259,76 @@ void drawSections() {
 
     // --- Horizontal threads (the "weft"), drawn solid. We also record each
     //     one's y-position and right-end so the vertical threads know where to
-    //     interlace over/under. ---
+    //     interlace over/under. Rural = darker tone, urban = lighter tone. ---
     float xL = x + 10;              // common left start of horizontals
     float yBase = y + sectionHeight - 10; // baseline the verticals rise from
     float[] hY = new float[6];      // y of each horizontal
     float[] hRight = new float[6];  // right-end x of each horizontal
 
-    // Horizontal line: women literate, rural
+    // Women literate — rural / urban
     float lineYRuralLiterate = y + sectionHeight * 0.24;
     float lineLengthRuralLiterate = map(literateRural, 0, 100, 0, sectionWidth - 20);
-    stroke(555, 345, 100);
+    stroke(rural(metricBase[0]));
     dataLine(xL, lineYRuralLiterate, xL + lineLengthRuralLiterate, lineYRuralLiterate,
       stateName, "Women literate (Rural)", literateRural);
     hY[0] = lineYRuralLiterate; hRight[0] = xL + lineLengthRuralLiterate;
 
-    // Horizontal line: women literate, urban
     float lineYUrbanLiterate = y + sectionHeight * 0.34;
     float lineLengthUrbanLiterate = map(literateUrban, 0, 100, 0, sectionWidth - 20);
-    stroke(100, 555, 100);
+    stroke(urban(metricBase[0]));
     dataLine(xL, lineYUrbanLiterate, xL + lineLengthUrbanLiterate, lineYUrbanLiterate,
       stateName, "Women literate (Urban)", literateUrban);
     hY[1] = lineYUrbanLiterate; hRight[1] = xL + lineLengthUrbanLiterate;
 
-    // Horizontal line: 10+ years of schooling, rural
+    // 10+ years of schooling — rural / urban
     float lineYRuralSchooling = y + sectionHeight * 0.44;
     float lineLengthRuralSchooling = map(schoolingRural, 0, 100, 0, sectionWidth - 20);
-    stroke(255, 105, 180);
+    stroke(rural(metricBase[1]));
     dataLine(xL, lineYRuralSchooling, xL + lineLengthRuralSchooling, lineYRuralSchooling,
       stateName, "10+ yrs of schooling (Rural)", schoolingRural);
     hY[2] = lineYRuralSchooling; hRight[2] = xL + lineLengthRuralSchooling;
 
-    // Horizontal line: 10+ years of schooling, urban
     float lineYUrbanSchooling = y + sectionHeight * 0.54;
     float lineLengthUrbanSchooling = map(schoolingUrban, 0, 100, 0, sectionWidth - 20);
-    stroke(220, 150, 255);
+    stroke(urban(metricBase[1]));
     dataLine(xL, lineYUrbanSchooling, xL + lineLengthUrbanSchooling, lineYUrbanSchooling,
       stateName, "10+ yrs of schooling (Urban)", schoolingUrban);
     hY[3] = lineYUrbanSchooling; hRight[3] = xL + lineLengthUrbanSchooling;
 
-    // Horizontal line: attended school age 6+, rural
+    // Attended school (age 6+) — rural / urban
     float lineYRuralAttended = y + sectionHeight * 0.64;
     float lineLengthRuralAttended = map(attendedSchoolRural, 0, 100, 0, sectionWidth - 20);
-    stroke(255, 200, 100);
+    stroke(rural(metricBase[2]));
     dataLine(xL, lineYRuralAttended, xL + lineLengthRuralAttended, lineYRuralAttended,
       stateName, "Attended school, age 6+ (Rural)", attendedSchoolRural);
     hY[4] = lineYRuralAttended; hRight[4] = xL + lineLengthRuralAttended;
 
-    // Horizontal line: attended school age 6+, urban
     float lineYUrbanAttended = y + sectionHeight * 0.74;
     float lineLengthUrbanAttended = map(attendedSchoolUrban, 0, 100, 0, sectionWidth - 20);
-    stroke(100, 200, 255);
+    stroke(urban(metricBase[2]));
     dataLine(xL, lineYUrbanAttended, xL + lineLengthUrbanAttended, lineYUrbanAttended,
       stateName, "Attended school, age 6+ (Urban)", attendedSchoolUrban);
     hY[5] = lineYUrbanAttended; hRight[5] = xL + lineLengthUrbanAttended;
 
     // --- Vertical threads (the "warp"), spread across the cell width and
-    //     interlaced over/under the horizontals ---
-    // Worked & paid in cash, rural / urban
+    //     interlaced over/under the horizontals. Rural = darker, urban = lighter. ---
+    // Worked & paid in cash
     wovenVertical(x + sectionWidth * 0.15, map(womenWorkedCashRural, 0, 100, 0, sectionHeight - 10), yBase, 0, hY, hRight,
-      158, 168, 41, stateName, "Worked & paid in cash (Rural)", womenWorkedCashRural);
+      rural(metricBase[3]), stateName, "Worked & paid in cash (Rural)", womenWorkedCashRural);
     wovenVertical(x + sectionWidth * 0.24, map(womenWorkedCashUrban, 0, 100, 0, sectionHeight - 10), yBase, 1, hY, hRight,
-      158, 168, 41, stateName, "Worked & paid in cash (Urban)", womenWorkedCashUrban);
+      urban(metricBase[3]), stateName, "Worked & paid in cash (Urban)", womenWorkedCashUrban);
 
-    // Owns a house and/or land, rural / urban
+    // Owns a house and/or land
     wovenVertical(x + sectionWidth * 0.46, map(womenOwnHouseLandRural, 0, 100, 0, sectionHeight - 40), yBase, 2, hY, hRight,
-      110, 84, 15, stateName, "Owns a house and/or land (Rural)", womenOwnHouseLandRural);
+      rural(metricBase[4]), stateName, "Owns a house and/or land (Rural)", womenOwnHouseLandRural);
     wovenVertical(x + sectionWidth * 0.55, map(womenOwnHouseLandUrban, 0, 100, 0, sectionHeight - 40), yBase, 3, hY, hRight,
-      110, 84, 15, stateName, "Owns a house and/or land (Urban)", womenOwnHouseLandUrban);
+      urban(metricBase[4]), stateName, "Owns a house and/or land (Urban)", womenOwnHouseLandUrban);
 
-    // Bank or savings account, rural / urban
+    // Bank or savings account
     wovenVertical(x + sectionWidth * 0.77, map(womenBankAccountRural, 0, 100, 0, sectionHeight - 50), yBase, 4, hY, hRight,
-      255, 0, 255, stateName, "Bank or savings account (Rural)", womenBankAccountRural);
+      rural(metricBase[5]), stateName, "Bank or savings account (Rural)", womenBankAccountRural);
     wovenVertical(x + sectionWidth * 0.86, map(womenBankAccountUrban, 0, 100, 0, sectionHeight - 50), yBase, 5, hY, hRight,
-      255, 0, 255, stateName, "Bank or savings account (Urban)", womenBankAccountUrban);
+      urban(metricBase[5]), stateName, "Bank or savings account (Urban)", womenBankAccountUrban);
   }
 }
 
@@ -342,12 +350,12 @@ void dataLine(float x1, float y1, float x2, float y2, String state, String label
 // At each crossing, plain-weave parity (col + row) decides who goes on top:
 // when the horizontal should be on top, we break a small gap in this vertical.
 void wovenVertical(float xv, float len, float yBase, int colIndex, float[] hY, float[] hRight,
-                   int r, int g, int b, String state, String label, float value) {
+                   color col, String state, String label, float value) {
   float yBot = yBase;
   float yTop = yBase - len;
   float gapHalf = 2; // half-width of the break where a horizontal rides over
 
-  stroke(r, g, b);
+  stroke(col);
   strokeWeight(1);
   float cursor = yTop;
   for (int k = 0; k < hY.length; k++) {          // hY is ordered top->bottom
@@ -395,7 +403,7 @@ void drawGrid(int left, int top, int cols, int rows, int cw, int ch) {
 
 // State name on top of the box, shrunk (and wrapped if needed) to fit
 void drawStateName(String name, float boxX, float boxY, float boxW) {
-  fill(INK); // white text
+  fill(INK);
   textAlign(LEFT, TOP);
   float maxW = boxW - 6;
 
@@ -459,11 +467,11 @@ void drawTooltip() {
   if (tx + boxW > width) tx = mouseX - boxW - 12;
   if (ty + boxH > height) ty = mouseY - boxH - 12;
 
-  stroke(0);
+  stroke(INK);
   strokeWeight(1);
-  fill(255, 250, 235); // soft cloth-colored tooltip
+  fill(250, 244, 232); // soft cloth-colored tooltip
   rect(tx, ty, boxW, boxH);
-  fill(0);
+  fill(INK);
   text(l1, tx + 6, ty + 5);
   text(l2, tx + 6, ty + 20);
 }
