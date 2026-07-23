@@ -23,7 +23,7 @@ class Segment {
 java.util.ArrayList<Segment> segments = new java.util.ArrayList<Segment>();
 
 void setup() {
-  size(1000, 800);
+  fullScreen();                   // artboard fills the whole screen
   pixelDensity(displayDensity()); // render at the screen's real density (fixes gritty/blurry lines on Retina)
   smooth(8);                      // high-quality anti-aliasing
 
@@ -57,33 +57,37 @@ void draw() {
 }
 
 void drawHeading() {
-  fill(255);
+  float leftMargin = 55;
   float sz = 40;
-  float cy = 35;
-  textAlign(LEFT, CENTER);
+  float titleY = 40;
+  textAlign(LEFT, TOP);
 
-  // measure both pieces so the whole title stays centered
+  // Title: italic "Penn" + regular "-madi", top-left
+  fill(255);
   textFont(headingItalicFont);
   textSize(sz);
   float w1 = textWidth("Penn");
+  text("Penn", leftMargin, titleY);
   textFont(headingFont);
   textSize(sz);
-  float w2 = textWidth("-madi");
+  text("-madi", leftMargin + w1, titleY);
 
-  float startX = width / 2 - (w1 + w2) / 2;
-
-  textFont(headingItalicFont); // italic "Penn"
-  textSize(sz);
-  text("Penn", startX, cy);
-
-  textFont(headingFont);       // regular "-madi"
-  textSize(sz);
-  text("-madi", startX + w1, cy);
+  // Description under the title (edit this text freely)
+  String desc =
+    "Penn-madi weaves together six measures of women's lives — literacy, years of "
+    + "schooling, school attendance, paid work, property ownership, and bank accounts — "
+    + "across every state and union territory of India. Each cell is one state: the horizontal "
+    + "threads compare rural and urban, and the vertical warp threads cross them like a "
+    + "traditional pai mat. Hover over any thread to read its value.";
+  fill(190);
+  textFont(bodyFont);
+  textSize(15);
+  text(desc, leftMargin, titleY + 52, min(width - 2 * leftMargin, 900), 110);
 }
 
 void drawSections() {
   int startX = 50;
-  int topMargin = 75;    // leaves room for the heading
+  int topMargin = 200;   // leaves room for the heading + description
   int bottomMargin = 35;
 
   int n = drawRows.size();
