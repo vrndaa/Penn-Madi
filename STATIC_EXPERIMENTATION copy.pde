@@ -1,3 +1,5 @@
+import java.awt.Font; // for the italic heading face
+
 Table table;
 
 // Rows we actually draw (India / IND filtered out)
@@ -6,6 +8,7 @@ java.util.ArrayList<TableRow> drawRows;
 // Fonts
 PFont bodyFont;
 PFont headingFont;
+PFont headingItalicFont;
 
 // Stitch segments recorded each frame so we can show a tooltip on hover
 class Segment {
@@ -27,6 +30,7 @@ void setup() {
   // Smooth, anti-aliased fonts (fixes the "gritty" look of the default font)
   bodyFont = createFont("SansSerif", 32, true);
   headingFont = createFont("Serif", 48, true);
+  headingItalicFont = new PFont(new Font("Serif", Font.ITALIC, 48), true); // italic serif for "Penn"
 
   table = loadTable("Urban Rural Data Cleaned.csv", "header");
 
@@ -54,10 +58,27 @@ void draw() {
 
 void drawHeading() {
   fill(255);
+  float sz = 40;
+  float cy = 35;
+  textAlign(LEFT, CENTER);
+
+  // measure both pieces so the whole title stays centered
+  textFont(headingItalicFont);
+  textSize(sz);
+  float w1 = textWidth("Penn");
   textFont(headingFont);
-  textSize(40);
-  textAlign(CENTER, CENTER);
-  text("Penn-madi", width / 2, 35);
+  textSize(sz);
+  float w2 = textWidth("-madi");
+
+  float startX = width / 2 - (w1 + w2) / 2;
+
+  textFont(headingItalicFont); // italic "Penn"
+  textSize(sz);
+  text("Penn", startX, cy);
+
+  textFont(headingFont);       // regular "-madi"
+  textSize(sz);
+  text("-madi", startX + w1, cy);
 }
 
 void drawSections() {
@@ -99,89 +120,80 @@ void drawSections() {
     // Shortened, legible state name at the top of this cell
     drawStateName(displayName(stateName), x, y, sectionWidth);
 
+    // --- Horizontal threads (the "weft"), drawn solid. We also record each
+    //     one's y-position and right-end so the vertical threads know where to
+    //     interlace over/under. ---
+    float xL = x + 10;              // common left start of horizontals
+    float yBase = y + sectionHeight - 10; // baseline the verticals rise from
+    float[] hY = new float[6];      // y of each horizontal
+    float[] hRight = new float[6];  // right-end x of each horizontal
+
     // Horizontal line: women literate, rural
     float lineYRuralLiterate = y + sectionHeight * 0.24;
     float lineLengthRuralLiterate = map(literateRural, 0, 100, 0, sectionWidth - 20);
     stroke(555, 345, 100);
-    dataLine(x + 10, lineYRuralLiterate, x + 10 + lineLengthRuralLiterate, lineYRuralLiterate,
+    dataLine(xL, lineYRuralLiterate, xL + lineLengthRuralLiterate, lineYRuralLiterate,
       stateName, "Women literate (Rural)", literateRural);
+    hY[0] = lineYRuralLiterate; hRight[0] = xL + lineLengthRuralLiterate;
 
     // Horizontal line: women literate, urban
     float lineYUrbanLiterate = y + sectionHeight * 0.34;
     float lineLengthUrbanLiterate = map(literateUrban, 0, 100, 0, sectionWidth - 20);
     stroke(100, 555, 100);
-    dataLine(x + 10, lineYUrbanLiterate, x + 10 + lineLengthUrbanLiterate, lineYUrbanLiterate,
+    dataLine(xL, lineYUrbanLiterate, xL + lineLengthUrbanLiterate, lineYUrbanLiterate,
       stateName, "Women literate (Urban)", literateUrban);
+    hY[1] = lineYUrbanLiterate; hRight[1] = xL + lineLengthUrbanLiterate;
 
     // Horizontal line: 10+ years of schooling, rural
     float lineYRuralSchooling = y + sectionHeight * 0.44;
     float lineLengthRuralSchooling = map(schoolingRural, 0, 100, 0, sectionWidth - 20);
     stroke(255, 105, 180);
-    dataLine(x + 10, lineYRuralSchooling, x + 10 + lineLengthRuralSchooling, lineYRuralSchooling,
+    dataLine(xL, lineYRuralSchooling, xL + lineLengthRuralSchooling, lineYRuralSchooling,
       stateName, "10+ yrs of schooling (Rural)", schoolingRural);
+    hY[2] = lineYRuralSchooling; hRight[2] = xL + lineLengthRuralSchooling;
 
     // Horizontal line: 10+ years of schooling, urban
     float lineYUrbanSchooling = y + sectionHeight * 0.54;
     float lineLengthUrbanSchooling = map(schoolingUrban, 0, 100, 0, sectionWidth - 20);
     stroke(220, 150, 255);
-    dataLine(x + 10, lineYUrbanSchooling, x + 10 + lineLengthUrbanSchooling, lineYUrbanSchooling,
+    dataLine(xL, lineYUrbanSchooling, xL + lineLengthUrbanSchooling, lineYUrbanSchooling,
       stateName, "10+ yrs of schooling (Urban)", schoolingUrban);
+    hY[3] = lineYUrbanSchooling; hRight[3] = xL + lineLengthUrbanSchooling;
 
     // Horizontal line: attended school age 6+, rural
     float lineYRuralAttended = y + sectionHeight * 0.64;
     float lineLengthRuralAttended = map(attendedSchoolRural, 0, 100, 0, sectionWidth - 20);
     stroke(255, 200, 100);
-    dataLine(x + 10, lineYRuralAttended, x + 10 + lineLengthRuralAttended, lineYRuralAttended,
+    dataLine(xL, lineYRuralAttended, xL + lineLengthRuralAttended, lineYRuralAttended,
       stateName, "Attended school, age 6+ (Rural)", attendedSchoolRural);
+    hY[4] = lineYRuralAttended; hRight[4] = xL + lineLengthRuralAttended;
 
     // Horizontal line: attended school age 6+, urban
     float lineYUrbanAttended = y + sectionHeight * 0.74;
     float lineLengthUrbanAttended = map(attendedSchoolUrban, 0, 100, 0, sectionWidth - 20);
     stroke(100, 200, 255);
-    dataLine(x + 10, lineYUrbanAttended, x + 10 + lineLengthUrbanAttended, lineYUrbanAttended,
+    dataLine(xL, lineYUrbanAttended, xL + lineLengthUrbanAttended, lineYUrbanAttended,
       stateName, "Attended school, age 6+ (Urban)", attendedSchoolUrban);
+    hY[5] = lineYUrbanAttended; hRight[5] = xL + lineLengthUrbanAttended;
 
-    // Vertical line: worked & paid in cash, rural
-    float lineXWomenWorkedCashRural = x + 10;
-    float lineLengthWomenWorkedCashRural = map(womenWorkedCashRural, 0, 100, 0, sectionHeight - 10);
-    stroke(158, 168, 41);
-    dataLine(lineXWomenWorkedCashRural, y + sectionHeight - 10, lineXWomenWorkedCashRural, y + sectionHeight - 10 - lineLengthWomenWorkedCashRural,
-      stateName, "Worked & paid in cash (Rural)", womenWorkedCashRural);
+    // --- Vertical threads (the "warp"), interlaced over/under the horizontals ---
+    // Worked & paid in cash, rural / urban
+    wovenVertical(x + 10, map(womenWorkedCashRural, 0, 100, 0, sectionHeight - 10), yBase, 0, hY, hRight,
+      158, 168, 41, stateName, "Worked & paid in cash (Rural)", womenWorkedCashRural);
+    wovenVertical(x + 20, map(womenWorkedCashUrban, 0, 100, 0, sectionHeight - 10), yBase, 1, hY, hRight,
+      158, 168, 41, stateName, "Worked & paid in cash (Urban)", womenWorkedCashUrban);
 
-    // Vertical line: worked & paid in cash, urban
-    float lineXWomenWorkedCashUrban = x + 20;
-    float lineLengthWomenWorkedCashUrban = map(womenWorkedCashUrban, 0, 100, 0, sectionHeight - 10);
-    stroke(158, 168, 41);
-    dataLine(lineXWomenWorkedCashUrban, y + sectionHeight - 10, lineXWomenWorkedCashUrban, y + sectionHeight - 10 - lineLengthWomenWorkedCashUrban,
-      stateName, "Worked & paid in cash (Urban)", womenWorkedCashUrban);
+    // Owns a house and/or land, rural / urban
+    wovenVertical(x + 40, map(womenOwnHouseLandRural, 0, 100, 0, sectionHeight - 40), yBase, 2, hY, hRight,
+      110, 84, 15, stateName, "Owns a house and/or land (Rural)", womenOwnHouseLandRural);
+    wovenVertical(x + 50, map(womenOwnHouseLandUrban, 0, 100, 0, sectionHeight - 40), yBase, 3, hY, hRight,
+      110, 84, 15, stateName, "Owns a house and/or land (Urban)", womenOwnHouseLandUrban);
 
-    // Vertical line: owns a house and/or land, rural
-    float lineXWomenOwnHouseLandRural = x + 40;
-    float lineLengthWomenOwnHouseLandRural = map(womenOwnHouseLandRural, 0, 100, 0, sectionHeight - 40);
-    stroke(110, 84, 15);
-    dataLine(lineXWomenOwnHouseLandRural, y + sectionHeight - 10, lineXWomenOwnHouseLandRural, y + sectionHeight - 10 - lineLengthWomenOwnHouseLandRural,
-      stateName, "Owns a house and/or land (Rural)", womenOwnHouseLandRural);
-
-    // Vertical line: owns a house and/or land, urban
-    float lineXWomenOwnHouseLandUrban = x + 50;
-    float lineLengthWomenOwnHouseLandUrban = map(womenOwnHouseLandUrban, 0, 100, 0, sectionHeight - 40);
-    stroke(110, 84, 15);
-    dataLine(lineXWomenOwnHouseLandUrban, y + sectionHeight - 10, lineXWomenOwnHouseLandUrban, y + sectionHeight - 10 - lineLengthWomenOwnHouseLandUrban,
-      stateName, "Owns a house and/or land (Urban)", womenOwnHouseLandUrban);
-
-    // Vertical line: bank or savings account, rural
-    float lineXWomenBankAccountRural = x + 70;
-    float lineLengthWomenBankAccountRural = map(womenBankAccountRural, 0, 100, 0, sectionHeight - 50);
-    stroke(255, 0, 255);
-    dataLine(lineXWomenBankAccountRural, y + sectionHeight - 10, lineXWomenBankAccountRural, y + sectionHeight - 10 - lineLengthWomenBankAccountRural,
-      stateName, "Bank or savings account (Rural)", womenBankAccountRural);
-
-    // Vertical line: bank or savings account, urban
-    float lineXWomenBankAccountUrban = x + 80;
-    float lineLengthWomenBankAccountUrban = map(womenBankAccountUrban, 0, 100, 0, sectionHeight - 50);
-    stroke(255, 0, 255);
-    dataLine(lineXWomenBankAccountUrban, y + sectionHeight - 10, lineXWomenBankAccountUrban, y + sectionHeight - 10 - lineLengthWomenBankAccountUrban,
-      stateName, "Bank or savings account (Urban)", womenBankAccountUrban);
+    // Bank or savings account, rural / urban
+    wovenVertical(x + 70, map(womenBankAccountRural, 0, 100, 0, sectionHeight - 50), yBase, 4, hY, hRight,
+      255, 0, 255, stateName, "Bank or savings account (Rural)", womenBankAccountRural);
+    wovenVertical(x + 80, map(womenBankAccountUrban, 0, 100, 0, sectionHeight - 50), yBase, 5, hY, hRight,
+      255, 0, 255, stateName, "Bank or savings account (Urban)", womenBankAccountUrban);
   }
 }
 
@@ -194,9 +206,36 @@ String displayName(String full) {
 
 // Draw a metric as a normal solid line AND record it for hover tooltips
 void dataLine(float x1, float y1, float x2, float y2, String state, String label, float value) {
-  strokeWeight(1.5);
+  strokeWeight(1);
   line(x1, y1, x2, y2);
   segments.add(new Segment(x1, y1, x2, y2, state, label, value));
+}
+
+// Draw a vertical thread that interlaces over/under the horizontal threads.
+// At each crossing, plain-weave parity (col + row) decides who goes on top:
+// when the horizontal should be on top, we break a small gap in this vertical.
+void wovenVertical(float xv, float len, float yBase, int colIndex, float[] hY, float[] hRight,
+                   int r, int g, int b, String state, String label, float value) {
+  float yBot = yBase;
+  float yTop = yBase - len;
+  float gapHalf = 2; // half-width of the break where a horizontal rides over
+
+  stroke(r, g, b);
+  strokeWeight(1);
+  float cursor = yTop;
+  for (int k = 0; k < hY.length; k++) {          // hY is ordered top->bottom
+    boolean crosses = (xv <= hRight[k]) && (hY[k] >= yTop) && (hY[k] <= yBot);
+    boolean horizontalOnTop = ((k + colIndex) % 2) == 0;
+    if (crosses && horizontalOnTop) {
+      float gTop = hY[k] - gapHalf;
+      if (gTop > cursor) line(xv, cursor, xv, gTop);
+      cursor = max(cursor, hY[k] + gapHalf);
+    }
+  }
+  if (cursor < yBot) line(xv, cursor, xv, yBot);
+
+  // record the full logical thread so hover tooltips still work
+  segments.add(new Segment(xv, yTop, xv, yBot, state, label, value));
 }
 
 // A dashed running-stitch look: even dashes with small gaps along the segment
@@ -216,7 +255,7 @@ void stitchLine(float x1, float y1, float x2, float y2) {
 // One continuous dashed stitch lattice: shared grid lines around every cell (no separate boxes)
 void drawGrid(int left, int top, int cols, int rows, int cw, int ch) {
   stroke(255); // white thread
-  strokeWeight(0.5);
+  strokeWeight(0.25);
   int right = left + cols * cw;
   int bottom = top + rows * ch;
   for (int c = 0; c <= cols; c++) {          // vertical stitch lines
@@ -234,7 +273,7 @@ void drawStateName(String name, float boxX, float boxY, float boxW) {
   float maxW = boxW - 6;
 
   // Try to fit on one line, shrinking the size down to a floor
-  float ts = 13;
+  float ts = 9;
   while (ts > 7) {
     textSize(ts);
     if (textWidth(name) <= maxW) break;
