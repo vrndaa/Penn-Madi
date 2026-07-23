@@ -10,6 +10,15 @@ PFont bodyFont;
 PFont headingFont;
 PFont headingItalicFont;
 
+// Page layout (computed in setup once the screen size is known)
+float PAGE_BORDER = 26;
+float dividerX, leftColX, leftColRight, rightColX, rightColRight;
+
+// Pattamadai pai palette (traditional red / green / black on straw)
+final color PAI_STRAW = color(232, 222, 184);
+final color PAI_RED   = color(200, 45, 45);
+final color PAI_GREEN = color(40, 130, 70);
+
 // Stitch segments recorded each frame so we can show a tooltip on hover
 class Segment {
   float x1, y1, x2, y2;
@@ -32,6 +41,13 @@ void setup() {
   headingFont = createFont("Serif", 48, true);
   headingItalicFont = new PFont(new Font("Serif", Font.ITALIC, 48), true); // italic serif for "Penn"
 
+  // Two-column layout: text on the left, visualization on the right
+  dividerX     = width * 0.40;
+  leftColX     = 60;
+  leftColRight = dividerX - 34;
+  rightColX    = dividerX + 34;
+  rightColRight = width - PAGE_BORDER - 22;
+
   table = loadTable("Urban Rural Data Cleaned.csv", "header");
 
   // Build the list of rows to draw, skipping the India / "IND" row
@@ -51,51 +67,160 @@ void setup() {
 void draw() {
   background(0); // black background
   segments.clear();
-  drawHeading();
-  drawSections();
-  drawBraidBorder(18); // braided frame around the whole page
+  drawPaiBorder();     // Pattamadai striped frame around the page
+  drawHeading();       // left column: title + description
+  drawLegend();        // left column: how to read
+  drawCurlyDivider();  // woven curl between the columns
+  drawSections();      // right column: the visualization
   drawTooltip();
 }
 
+// ---- Left column: title + description -------------------------------------
 void drawHeading() {
-  float leftMargin = 55;
   float sz = 40;
-  float titleY = 40;
+  float titleY = 44;
   textAlign(LEFT, TOP);
 
-  // Title: italic "Penn" + regular "-madi", top-left
+  // Title: italic "Penn" + regular "-madi"
   fill(255);
   textFont(headingItalicFont);
   textSize(sz);
   float w1 = textWidth("Penn");
-  text("Penn", leftMargin, titleY);
+  text("Penn", leftColX, titleY);
   textFont(headingFont);
   textSize(sz);
-  text("-madi", leftMargin + w1, titleY);
+  text("-madi", leftColX + w1, titleY);
 
-  // Description under the title (edit this text freely)
+  // Description (edit this text freely)
   String desc =
     "Penn-madi weaves together six measures of women's lives — literacy, years of "
     + "schooling, school attendance, paid work, property ownership, and bank accounts — "
-    + "across every state and union territory of India. Each cell is one state: the horizontal "
-    + "threads compare rural and urban, and the vertical warp threads cross them like a "
-    + "traditional pai mat. Hover over any thread to read its value.";
-  fill(190);
+    + "for every state and union territory of India. Each state is a small cloth: horizontal "
+    + "threads compare rural and urban, and vertical warp threads cross them, echoing the fine "
+    + "Pattamadai pai mats of Tamil Nadu. Hover over any thread to read its value.";
+  fill(195);
   textFont(bodyFont);
   textSize(15);
-  text(desc, leftMargin, titleY + 52, min(width - 2 * leftMargin, 900), 110);
+  text(desc, leftColX, titleY + 52, leftColRight - leftColX, 200);
 }
 
-void drawSections() {
-  int topMargin = 200;   // leaves room for the heading + description
+// ---- Left column: how-to-read legend --------------------------------------
+void drawLegend() {
+  float lx = leftColX;
+  float lw = leftColRight - leftColX;
+  float y = height * 0.42;
 
+  fill(255);
+  textAlign(LEFT, TOP);
+  textFont(headingFont);
+  textSize(22);
+  text("how to read", lx, y);
+  y += 40;
+
+  textFont(bodyFont);
+  fill(195);
+  textSize(13);
+  text("Each cell is a state. Every thread is one statistic — the longer the thread, the higher the percentage.",
+    lx, y, lw, 60);
+  y += 54;
+
+  fill(255);
+  textSize(13);
+  text("Horizontal threads   ·   rural / urban", lx, y); y += 22;
+  y = legendRow(lx, y, "Women literate", true, color(255, 255, 100), color(100, 255, 100));
+  y = legendRow(lx, y, "10+ years of schooling", true, color(255, 105, 180), color(220, 150, 255));
+  y = legendRow(lx, y, "Attended school (age 6+)", true, color(255, 200, 100), color(100, 200, 255));
+
+  y += 12;
+  fill(255);
+  text("Vertical threads", lx, y); y += 22;
+  y = legendRow(lx, y, "Worked & paid in cash", false, color(158, 168, 41), 0);
+  y = legendRow(lx, y, "Owns a house / land", false, color(110, 84, 15), 0);
+  y = legendRow(lx, y, "Bank / savings account", false, color(255, 0, 255), 0);
+
+  y += 12;
+  fill(150);
+  textSize(12);
+  text("Hover over any thread to read its exact value.", lx, y, lw, 40);
+}
+
+// One legend row: a colour swatch (or a rural/urban pair) plus a label
+float legendRow(float lx, float y, String label, boolean pair, color c1, color c2) {
+  float swLen = 22;
+  strokeWeight(2);
+  stroke(c1);
+  line(lx, y + 7, lx + swLen, y + 7);
+  float textX = lx + swLen + 12;
+  if (pair) {
+    stroke(c2);
+    line(lx + swLen + 6, y + 7, lx + swLen * 2 + 6, y + 7);
+    textX = lx + swLen * 2 + 16;
+  }
+  noStroke();
+  fill(210);
+  textAlign(LEFT, TOP);
+  textSize(13);
+  text(label, textX, y);
+  return y + 21;
+}
+
+// ---- The woven curl dividing the two columns ------------------------------
+void drawCurlyDivider() {
+  float cx = dividerX;
+  float yTop = PAGE_BORDER + 24;
+  float yBot = height - PAGE_BORDER - 24;
+  float r = 9;          // loop radius
+  float pitch = 22;     // how far each loop advances down
+  float s = pitch / TWO_PI;
+  float thMax = (yBot - yTop) / s;
+
+  stroke(PAI_STRAW);
+  strokeWeight(1.2);
+  noFill();
+  beginShape();
+  for (float th = 0; th <= thMax; th += 0.15) {
+    float yy = yTop + s * th - r * sin(th);
+    float xx = cx + r * cos(th);
+    vertex(xx, yy);
+  }
+  endShape();
+}
+
+// ---- Pattamadai striped border around the page ----------------------------
+void drawPaiBorder() {
+  paiFrame(PAGE_BORDER,      PAI_STRAW); // straw ground line
+  paiFrame(PAGE_BORDER + 6,  PAI_RED);   // red stripe
+  paiFrame(PAGE_BORDER + 12, PAI_GREEN); // green stripe
+}
+
+void paiFrame(float m, color c) {
+  stroke(c);
+  strokeWeight(1);
+  float L = m, R = width - m, T = m, B = height - m;
+  stitchLine(L, T, R, T);
+  stitchLine(R, T, R, B);
+  stitchLine(R, B, L, B);
+  stitchLine(L, B, L, T);
+}
+
+// ---- The visualization (right column) -------------------------------------
+void drawSections() {
   int n = drawRows.size();
   int cols = ceil(sqrt(n));            // arrange into a near-square grid...
   int rows = ceil((float) n / cols);   // ...with no trailing empty cells
-  int cellWidth = 150;   // fixed, normal cell size (not stretched to the screen)
-  int cellHeight = 115;
-  int startX = (width - cols * cellWidth) / 2; // center the grid horizontally
-  int sectionWidth = cellWidth;        // cells tile edge-to-edge (shared lattice, no separate boxes)
+
+  // Fit a square-celled grid into the right column
+  float availW = rightColRight - rightColX;
+  float y1 = 120;
+  float y2 = height - PAGE_BORDER - 24;
+  float availH = y2 - y1;
+  float cell = min(availW / cols, availH / rows);
+
+  int cellWidth = (int) cell;
+  int cellHeight = (int) cell;
+  int startX = (int) (rightColX + (availW - cols * cell) / 2);
+  int topMargin = (int) (y1 + (availH - rows * cell) / 2);
+  int sectionWidth = cellWidth;
   int sectionHeight = cellHeight;
 
   // One continuous dashed stitch lattice framing all cells
@@ -254,37 +379,6 @@ void stitchLine(float x1, float y1, float x2, float y2) {
   for (float t = 0; t < d; t += dash + gap) {
     float et = min(t + dash, d);
     line(x1 + ux * t, y1 + uy * t, x1 + ux * et, y1 + uy * et);
-  }
-}
-
-// Braided (two-strand twist) frame around the whole page, inset by margin m
-void drawBraidBorder(float m) {
-  stroke(255);
-  strokeWeight(1.5);
-  noFill();
-  float amp = 6;    // how far the strands swing
-  float wave = 20;  // length of one twist
-  float L = m, R = width - m, T = m, B = height - m;
-  braidSegment(L, T, R, T, amp, wave); // top
-  braidSegment(R, T, R, B, amp, wave); // right
-  braidSegment(R, B, L, B, amp, wave); // bottom
-  braidSegment(L, B, L, T, amp, wave); // left
-}
-
-// Two intertwining sine strands along a straight segment = a braid/rope look
-void braidSegment(float x0, float y0, float x1, float y1, float amp, float wave) {
-  float len = dist(x0, y0, x1, y1);
-  if (len <= 0) return;
-  float ux = (x1 - x0) / len, uy = (y1 - y0) / len; // along the edge
-  float nx = -uy, ny = ux;                          // perpendicular
-  for (int strand = 0; strand < 2; strand++) {
-    float phase = strand * PI; // second strand is half a twist out of step
-    beginShape();
-    for (float s = 0; s <= len; s += 2) {
-      float off = amp * sin(TWO_PI * s / wave + phase);
-      vertex(x0 + ux * s + nx * off, y0 + uy * s + ny * off);
-    }
-    endShape();
   }
 }
 
