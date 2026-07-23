@@ -104,42 +104,42 @@ void drawSections() {
     drawStateName(displayName(stateName), x, y, sectionWidth);
 
     // Horizontal line: women literate, rural
-    float lineYRuralLiterate = y + sectionHeight * 0.22;
+    float lineYRuralLiterate = y + sectionHeight / 6;
     float lineLengthRuralLiterate = map(literateRural, 0, 100, 0, sectionWidth - 20);
     stroke(555, 345, 100);
     dataLine(x + 10, lineYRuralLiterate, x + 10 + lineLengthRuralLiterate, lineYRuralLiterate,
       stateName, "Women literate (Rural)", literateRural);
 
     // Horizontal line: women literate, urban
-    float lineYUrbanLiterate = y + sectionHeight * 0.28;
+    float lineYUrbanLiterate = y + sectionHeight / 4;
     float lineLengthUrbanLiterate = map(literateUrban, 0, 100, 0, sectionWidth - 20);
     stroke(100, 555, 100);
     dataLine(x + 10, lineYUrbanLiterate, x + 10 + lineLengthUrbanLiterate, lineYUrbanLiterate,
       stateName, "Women literate (Urban)", literateUrban);
 
     // Horizontal line: 10+ years of schooling, rural
-    float lineYRuralSchooling = y + sectionHeight * 0.40;
+    float lineYRuralSchooling = y + sectionHeight * 3 / 6;
     float lineLengthRuralSchooling = map(schoolingRural, 0, 100, 0, sectionWidth - 20);
     stroke(255, 105, 180);
     dataLine(x + 10, lineYRuralSchooling, x + 10 + lineLengthRuralSchooling, lineYRuralSchooling,
       stateName, "10+ yrs of schooling (Rural)", schoolingRural);
 
     // Horizontal line: 10+ years of schooling, urban
-    float lineYUrbanSchooling = y + sectionHeight * 0.46;
+    float lineYUrbanSchooling = y + sectionHeight * 4 / 7;
     float lineLengthUrbanSchooling = map(schoolingUrban, 0, 100, 0, sectionWidth - 20);
     stroke(220, 150, 255);
     dataLine(x + 10, lineYUrbanSchooling, x + 10 + lineLengthUrbanSchooling, lineYUrbanSchooling,
       stateName, "10+ yrs of schooling (Urban)", schoolingUrban);
 
     // Horizontal line: attended school age 6+, rural
-    float lineYRuralAttended = y + sectionHeight * 0.58;
+    float lineYRuralAttended = y + sectionHeight * 4.75 / 6;
     float lineLengthRuralAttended = map(attendedSchoolRural, 0, 100, 0, sectionWidth - 20);
     stroke(255, 200, 100);
     dataLine(x + 10, lineYRuralAttended, x + 10 + lineLengthRuralAttended, lineYRuralAttended,
       stateName, "Attended school, age 6+ (Rural)", attendedSchoolRural);
 
     // Horizontal line: attended school age 6+, urban
-    float lineYUrbanAttended = y + sectionHeight * 0.64;
+    float lineYUrbanAttended = y + sectionHeight * 6 / 7;
     float lineLengthUrbanAttended = map(attendedSchoolUrban, 0, 100, 0, sectionWidth - 20);
     stroke(100, 200, 255);
     dataLine(x + 10, lineYUrbanAttended, x + 10 + lineLengthUrbanAttended, lineYUrbanAttended,
