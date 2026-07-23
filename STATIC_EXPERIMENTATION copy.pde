@@ -21,6 +21,8 @@ java.util.ArrayList<Segment> segments = new java.util.ArrayList<Segment>();
 
 void setup() {
   size(1000, 800);
+  pixelDensity(displayDensity()); // render at the screen's real density (fixes gritty/blurry lines on Retina)
+  smooth(8);                      // high-quality anti-aliasing
 
   // Smooth, anti-aliased fonts (fixes the "gritty" look of the default font)
   bodyFont = createFont("SansSerif", 32, true);
@@ -62,22 +64,24 @@ void drawSections() {
   int startX = 50;
   int topMargin = 75;    // leaves room for the heading
   int bottomMargin = 35;
-  int gap = 16;          // even spacing between boxes
 
   int n = drawRows.size();
   int cols = ceil(sqrt(n));            // arrange into a near-square grid...
   int rows = ceil((float) n / cols);   // ...with no trailing empty cells
   int cellWidth = (width - 2 * startX) / cols;
   int cellHeight = (height - topMargin - bottomMargin) / rows;
-  int sectionWidth = cellWidth - gap;
-  int sectionHeight = cellHeight - gap;
+  int sectionWidth = cellWidth;        // cells tile edge-to-edge (shared lattice, no separate boxes)
+  int sectionHeight = cellHeight;
+
+  // One continuous dashed stitch lattice framing all cells
+  drawGrid(startX, topMargin, cols, rows, cellWidth, cellHeight);
 
   textFont(bodyFont);
 
   for (int i = 0; i < n; i++) {
     TableRow row = drawRows.get(i);
-    int x = startX + (i % cols) * cellWidth + gap / 2;
-    int y = topMargin + (i / cols) * cellHeight + gap / 2;
+    int x = startX + (i % cols) * cellWidth;
+    int y = topMargin + (i / cols) * cellHeight;
     String stateName = trim(row.getString(0)); // full name (used in tooltip)
     float literateRural = row.getFloat(2);
     float literateUrban = row.getFloat(3);
@@ -92,15 +96,7 @@ void drawSections() {
     float womenBankAccountRural = row.getFloat(12);
     float womenBankAccountUrban = row.getFloat (13);
 
-    // The box (black, so it blends into the background; the white stitch frame defines it)
-    fill(0);
-    noStroke();
-    rect(x, y, sectionWidth, sectionHeight);
-
-    // White stitch pattern framing the box
-    drawStitchBorder(x, y, sectionWidth, sectionHeight);
-
-    // Shortened, legible state name on top
+    // Shortened, legible state name at the top of this cell
     drawStateName(displayName(stateName), x, y, sectionWidth);
 
     // Horizontal line: women literate, rural
@@ -203,12 +199,12 @@ void dataLine(float x1, float y1, float x2, float y2, String state, String label
   segments.add(new Segment(x1, y1, x2, y2, state, label, value));
 }
 
-// A running-stitch look: short dashes with small gaps along the segment
+// A dashed running-stitch look: even dashes with small gaps along the segment
 void stitchLine(float x1, float y1, float x2, float y2) {
   float d = dist(x1, y1, x2, y2);
   if (d <= 0) return;
-  float dash = 4;
-  float gap = 3;
+  float dash = 6;
+  float gap = 4;
   float ux = (x2 - x1) / d;
   float uy = (y2 - y1) / d;
   for (float t = 0; t < d; t += dash + gap) {
@@ -217,14 +213,18 @@ void stitchLine(float x1, float y1, float x2, float y2) {
   }
 }
 
-// Thin white running-stitch frame right on the box edge (subtle, not a bold box)
-void drawStitchBorder(float x, float y, float w, float h) {
+// One continuous dashed stitch lattice: shared grid lines around every cell (no separate boxes)
+void drawGrid(int left, int top, int cols, int rows, int cw, int ch) {
   stroke(255); // white thread
   strokeWeight(0.5);
-  stitchLine(x, y, x + w, y);         // top
-  stitchLine(x + w, y, x + w, y + h); // right
-  stitchLine(x + w, y + h, x, y + h); // bottom
-  stitchLine(x, y + h, x, y);         // left
+  int right = left + cols * cw;
+  int bottom = top + rows * ch;
+  for (int c = 0; c <= cols; c++) {          // vertical stitch lines
+    stitchLine(left + c * cw, top, left + c * cw, bottom);
+  }
+  for (int r = 0; r <= rows; r++) {          // horizontal stitch lines
+    stitchLine(left, top + r * ch, right, top + r * ch);
+  }
 }
 
 // State name on top of the box, shrunk (and wrapped if needed) to fit
