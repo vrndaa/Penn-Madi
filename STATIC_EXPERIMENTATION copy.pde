@@ -53,6 +53,7 @@ void draw() {
   segments.clear();
   drawHeading();
   drawSections();
+  drawBraidBorder(18); // braided frame around the whole page
   drawTooltip();
 }
 
@@ -86,15 +87,14 @@ void drawHeading() {
 }
 
 void drawSections() {
-  int startX = 50;
   int topMargin = 200;   // leaves room for the heading + description
-  int bottomMargin = 35;
 
   int n = drawRows.size();
   int cols = ceil(sqrt(n));            // arrange into a near-square grid...
   int rows = ceil((float) n / cols);   // ...with no trailing empty cells
-  int cellWidth = (width - 2 * startX) / cols;
-  int cellHeight = (height - topMargin - bottomMargin) / rows;
+  int cellWidth = 150;   // fixed, normal cell size (not stretched to the screen)
+  int cellHeight = 115;
+  int startX = (width - cols * cellWidth) / 2; // center the grid horizontally
   int sectionWidth = cellWidth;        // cells tile edge-to-edge (shared lattice, no separate boxes)
   int sectionHeight = cellHeight;
 
@@ -254,6 +254,37 @@ void stitchLine(float x1, float y1, float x2, float y2) {
   for (float t = 0; t < d; t += dash + gap) {
     float et = min(t + dash, d);
     line(x1 + ux * t, y1 + uy * t, x1 + ux * et, y1 + uy * et);
+  }
+}
+
+// Braided (two-strand twist) frame around the whole page, inset by margin m
+void drawBraidBorder(float m) {
+  stroke(255);
+  strokeWeight(1.5);
+  noFill();
+  float amp = 6;    // how far the strands swing
+  float wave = 20;  // length of one twist
+  float L = m, R = width - m, T = m, B = height - m;
+  braidSegment(L, T, R, T, amp, wave); // top
+  braidSegment(R, T, R, B, amp, wave); // right
+  braidSegment(R, B, L, B, amp, wave); // bottom
+  braidSegment(L, B, L, T, amp, wave); // left
+}
+
+// Two intertwining sine strands along a straight segment = a braid/rope look
+void braidSegment(float x0, float y0, float x1, float y1, float amp, float wave) {
+  float len = dist(x0, y0, x1, y1);
+  if (len <= 0) return;
+  float ux = (x1 - x0) / len, uy = (y1 - y0) / len; // along the edge
+  float nx = -uy, ny = ux;                          // perpendicular
+  for (int strand = 0; strand < 2; strand++) {
+    float phase = strand * PI; // second strand is half a twist out of step
+    beginShape();
+    for (float s = 0; s <= len; s += 2) {
+      float off = amp * sin(TWO_PI * s / wave + phase);
+      vertex(x0 + ux * s + nx * off, y0 + uy * s + ny * off);
+    }
+    endShape();
   }
 }
 
