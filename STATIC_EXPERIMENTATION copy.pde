@@ -18,6 +18,12 @@ float dividerX, leftColX, leftColRight, rightColX, rightColRight;
 final color PAI_STRAW = color(232, 222, 184);
 final color PAI_RED   = color(200, 45, 45);
 final color PAI_GREEN = color(40, 130, 70);
+final color PAI_DARK  = color(34, 28, 22);   // the "black" stripe of a pai
+
+// Page theme (beige cloth ground; dark thread for text + lattice)
+color BG     = color(235, 226, 202);
+color INK    = color(45, 38, 30);
+color SUBINK = color(95, 84, 66);
 
 // Stitch segments recorded each frame so we can show a tooltip on hover
 class Segment {
@@ -65,12 +71,12 @@ void setup() {
 }
 
 void draw() {
-  background(0); // black background
+  background(BG); // beige cloth background
   segments.clear();
   drawPaiBorder();     // Pattamadai striped frame around the page
   drawHeading();       // left column: title + description
   drawLegend();        // left column: how to read
-  drawCurlyDivider();  // woven curl between the columns
+  drawStripeDivider(); // three pai stripes between the columns
   drawSections();      // right column: the visualization
   drawTooltip();
 }
@@ -82,7 +88,7 @@ void drawHeading() {
   textAlign(LEFT, TOP);
 
   // Title: italic "Penn" + regular "-madi"
-  fill(255);
+  fill(INK);
   textFont(headingItalicFont);
   textSize(sz);
   float w1 = textWidth("Penn");
@@ -98,7 +104,7 @@ void drawHeading() {
     + "for every state and union territory of India. Each state is a small cloth: horizontal "
     + "threads compare rural and urban, and vertical warp threads cross them, echoing the fine "
     + "Pattamadai pai mats of Tamil Nadu. Hover over any thread to read its value.";
-  fill(195);
+  fill(SUBINK);
   textFont(bodyFont);
   textSize(15);
   text(desc, leftColX, titleY + 52, leftColRight - leftColX, 200);
@@ -110,7 +116,7 @@ void drawLegend() {
   float lw = leftColRight - leftColX;
   float y = height * 0.42;
 
-  fill(255);
+  fill(INK);
   textAlign(LEFT, TOP);
   textFont(headingFont);
   textSize(22);
@@ -118,13 +124,13 @@ void drawLegend() {
   y += 40;
 
   textFont(bodyFont);
-  fill(195);
+  fill(SUBINK);
   textSize(13);
   text("Each cell is a state. Every thread is one statistic — the longer the thread, the higher the percentage.",
     lx, y, lw, 60);
   y += 54;
 
-  fill(255);
+  fill(INK);
   textSize(13);
   text("Horizontal threads   ·   rural / urban", lx, y); y += 22;
   y = legendRow(lx, y, "Women literate", true, color(255, 255, 100), color(100, 255, 100));
@@ -132,14 +138,14 @@ void drawLegend() {
   y = legendRow(lx, y, "Attended school (age 6+)", true, color(255, 200, 100), color(100, 200, 255));
 
   y += 12;
-  fill(255);
+  fill(INK);
   text("Vertical threads", lx, y); y += 22;
   y = legendRow(lx, y, "Worked & paid in cash", false, color(158, 168, 41), 0);
   y = legendRow(lx, y, "Owns a house / land", false, color(110, 84, 15), 0);
   y = legendRow(lx, y, "Bank / savings account", false, color(255, 0, 255), 0);
 
   y += 12;
-  fill(150);
+  fill(SUBINK);
   textSize(12);
   text("Hover over any thread to read its exact value.", lx, y, lw, 40);
 }
@@ -157,39 +163,30 @@ float legendRow(float lx, float y, String label, boolean pair, color c1, color c
     textX = lx + swLen * 2 + 16;
   }
   noStroke();
-  fill(210);
+  fill(INK);
   textAlign(LEFT, TOP);
   textSize(13);
   text(label, textX, y);
   return y + 21;
 }
 
-// ---- The woven curl dividing the two columns ------------------------------
-void drawCurlyDivider() {
-  float cx = dividerX;
+// ---- Three pai stripes dividing the two columns ---------------------------
+void drawStripeDivider() {
   float yTop = PAGE_BORDER + 24;
   float yBot = height - PAGE_BORDER - 24;
-  float r = 9;          // loop radius
-  float pitch = 22;     // how far each loop advances down
-  float s = pitch / TWO_PI;
-  float thMax = (yBot - yTop) / s;
-
-  stroke(PAI_STRAW);
-  strokeWeight(1.2);
-  noFill();
-  beginShape();
-  for (float th = 0; th <= thMax; th += 0.15) {
-    float yy = yTop + s * th - r * sin(th);
-    float xx = cx + r * cos(th);
-    vertex(xx, yy);
+  color[] stripes = { PAI_RED, PAI_DARK, PAI_GREEN };
+  strokeWeight(1);
+  for (int i = 0; i < 3; i++) {
+    float sx = dividerX + (i - 1) * 7; // -7, 0, +7 around the divider line
+    stroke(stripes[i]);
+    stitchLine(sx, yTop, sx, yBot);
   }
-  endShape();
 }
 
 // ---- Pattamadai striped border around the page ----------------------------
 void drawPaiBorder() {
-  paiFrame(PAGE_BORDER,      PAI_STRAW); // straw ground line
-  paiFrame(PAGE_BORDER + 6,  PAI_RED);   // red stripe
+  paiFrame(PAGE_BORDER,      PAI_RED);   // red stripe
+  paiFrame(PAGE_BORDER + 6,  PAI_DARK);  // black stripe
   paiFrame(PAGE_BORDER + 12, PAI_GREEN); // green stripe
 }
 
@@ -384,7 +381,7 @@ void stitchLine(float x1, float y1, float x2, float y2) {
 
 // One continuous dashed stitch lattice: shared grid lines around every cell (no separate boxes)
 void drawGrid(int left, int top, int cols, int rows, int cw, int ch) {
-  stroke(255); // white thread
+  stroke(INK); // dark thread lattice (reads on the beige ground)
   strokeWeight(0.25);
   int right = left + cols * cw;
   int bottom = top + rows * ch;
@@ -398,7 +395,7 @@ void drawGrid(int left, int top, int cols, int rows, int cw, int ch) {
 
 // State name on top of the box, shrunk (and wrapped if needed) to fit
 void drawStateName(String name, float boxX, float boxY, float boxW) {
-  fill(255); // white text
+  fill(INK); // white text
   textAlign(LEFT, TOP);
   float maxW = boxW - 6;
 
