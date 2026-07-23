@@ -176,23 +176,24 @@ void drawSections() {
       stateName, "Attended school, age 6+ (Urban)", attendedSchoolUrban);
     hY[5] = lineYUrbanAttended; hRight[5] = xL + lineLengthUrbanAttended;
 
-    // --- Vertical threads (the "warp"), interlaced over/under the horizontals ---
+    // --- Vertical threads (the "warp"), spread across the cell width and
+    //     interlaced over/under the horizontals ---
     // Worked & paid in cash, rural / urban
-    wovenVertical(x + 10, map(womenWorkedCashRural, 0, 100, 0, sectionHeight - 10), yBase, 0, hY, hRight,
+    wovenVertical(x + sectionWidth * 0.15, map(womenWorkedCashRural, 0, 100, 0, sectionHeight - 10), yBase, 0, hY, hRight,
       158, 168, 41, stateName, "Worked & paid in cash (Rural)", womenWorkedCashRural);
-    wovenVertical(x + 20, map(womenWorkedCashUrban, 0, 100, 0, sectionHeight - 10), yBase, 1, hY, hRight,
+    wovenVertical(x + sectionWidth * 0.24, map(womenWorkedCashUrban, 0, 100, 0, sectionHeight - 10), yBase, 1, hY, hRight,
       158, 168, 41, stateName, "Worked & paid in cash (Urban)", womenWorkedCashUrban);
 
     // Owns a house and/or land, rural / urban
-    wovenVertical(x + 40, map(womenOwnHouseLandRural, 0, 100, 0, sectionHeight - 40), yBase, 2, hY, hRight,
+    wovenVertical(x + sectionWidth * 0.46, map(womenOwnHouseLandRural, 0, 100, 0, sectionHeight - 40), yBase, 2, hY, hRight,
       110, 84, 15, stateName, "Owns a house and/or land (Rural)", womenOwnHouseLandRural);
-    wovenVertical(x + 50, map(womenOwnHouseLandUrban, 0, 100, 0, sectionHeight - 40), yBase, 3, hY, hRight,
+    wovenVertical(x + sectionWidth * 0.55, map(womenOwnHouseLandUrban, 0, 100, 0, sectionHeight - 40), yBase, 3, hY, hRight,
       110, 84, 15, stateName, "Owns a house and/or land (Urban)", womenOwnHouseLandUrban);
 
     // Bank or savings account, rural / urban
-    wovenVertical(x + 70, map(womenBankAccountRural, 0, 100, 0, sectionHeight - 50), yBase, 4, hY, hRight,
+    wovenVertical(x + sectionWidth * 0.77, map(womenBankAccountRural, 0, 100, 0, sectionHeight - 50), yBase, 4, hY, hRight,
       255, 0, 255, stateName, "Bank or savings account (Rural)", womenBankAccountRural);
-    wovenVertical(x + 80, map(womenBankAccountUrban, 0, 100, 0, sectionHeight - 50), yBase, 5, hY, hRight,
+    wovenVertical(x + sectionWidth * 0.86, map(womenBankAccountUrban, 0, 100, 0, sectionHeight - 50), yBase, 5, hY, hRight,
       255, 0, 255, stateName, "Bank or savings account (Urban)", womenBankAccountUrban);
   }
 }
@@ -269,7 +270,7 @@ void drawGrid(int left, int top, int cols, int rows, int cw, int ch) {
 // State name on top of the box, shrunk (and wrapped if needed) to fit
 void drawStateName(String name, float boxX, float boxY, float boxW) {
   fill(255); // white text
-  textAlign(RIGHT, TOP);
+  textAlign(LEFT, TOP);
   float maxW = boxW - 6;
 
   // Try to fit on one line, shrinking the size down to a floor
@@ -281,7 +282,7 @@ void drawStateName(String name, float boxX, float boxY, float boxW) {
   }
   textSize(ts);
   if (textWidth(name) <= maxW) {
-    text(name, boxX + boxW - 4, boxY + 9);
+    text(name, boxX + 4, boxY + 9);
     return;
   }
 
@@ -301,9 +302,9 @@ void drawStateName(String name, float boxX, float boxY, float boxW) {
     line2 = (line2.length() == 0) ? words[i] : line2 + " " + words[i];
     i++;
   }
-  text(line1, boxX + boxW - 4, boxY + 8);
+  text(line1, boxX + 4, boxY + 8);
   if (line2.length() > 0) {
-    text(line2, boxX + boxW - 4, boxY + 18);
+    text(line2, boxX + 4, boxY + 18);
   }
 }
 
