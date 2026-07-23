@@ -62,19 +62,22 @@ void drawSections() {
   int startX = 50;
   int topMargin = 75;    // leaves room for the heading
   int bottomMargin = 35;
+  int gap = 16;          // even spacing between boxes
 
   int n = drawRows.size();
   int cols = ceil(sqrt(n));            // arrange into a near-square grid...
   int rows = ceil((float) n / cols);   // ...with no trailing empty cells
-  int sectionWidth = (width - 2 * startX) / cols;
-  int sectionHeight = (height - topMargin - bottomMargin) / rows;
+  int cellWidth = (width - 2 * startX) / cols;
+  int cellHeight = (height - topMargin - bottomMargin) / rows;
+  int sectionWidth = cellWidth - gap;
+  int sectionHeight = cellHeight - gap;
 
   textFont(bodyFont);
 
   for (int i = 0; i < n; i++) {
     TableRow row = drawRows.get(i);
-    int x = startX + (i % cols) * sectionWidth;
-    int y = topMargin + (i / cols) * sectionHeight;
+    int x = startX + (i % cols) * cellWidth + gap / 2;
+    int y = topMargin + (i / cols) * cellHeight + gap / 2;
     String stateName = trim(row.getString(0)); // full name (used in tooltip)
     float literateRural = row.getFloat(2);
     float literateUrban = row.getFloat(3);
@@ -101,42 +104,42 @@ void drawSections() {
     drawStateName(displayName(stateName), x, y, sectionWidth);
 
     // Horizontal line: women literate, rural
-    float lineYRuralLiterate = y + sectionHeight / 6;
+    float lineYRuralLiterate = y + sectionHeight * 0.22;
     float lineLengthRuralLiterate = map(literateRural, 0, 100, 0, sectionWidth - 20);
     stroke(555, 345, 100);
     dataLine(x + 10, lineYRuralLiterate, x + 10 + lineLengthRuralLiterate, lineYRuralLiterate,
       stateName, "Women literate (Rural)", literateRural);
 
     // Horizontal line: women literate, urban
-    float lineYUrbanLiterate = y + sectionHeight / 4;
+    float lineYUrbanLiterate = y + sectionHeight * 0.28;
     float lineLengthUrbanLiterate = map(literateUrban, 0, 100, 0, sectionWidth - 20);
     stroke(100, 555, 100);
     dataLine(x + 10, lineYUrbanLiterate, x + 10 + lineLengthUrbanLiterate, lineYUrbanLiterate,
       stateName, "Women literate (Urban)", literateUrban);
 
     // Horizontal line: 10+ years of schooling, rural
-    float lineYRuralSchooling = y + sectionHeight * 3 / 6;
+    float lineYRuralSchooling = y + sectionHeight * 0.40;
     float lineLengthRuralSchooling = map(schoolingRural, 0, 100, 0, sectionWidth - 20);
     stroke(255, 105, 180);
     dataLine(x + 10, lineYRuralSchooling, x + 10 + lineLengthRuralSchooling, lineYRuralSchooling,
       stateName, "10+ yrs of schooling (Rural)", schoolingRural);
 
     // Horizontal line: 10+ years of schooling, urban
-    float lineYUrbanSchooling = y + sectionHeight * 4 / 7;
+    float lineYUrbanSchooling = y + sectionHeight * 0.46;
     float lineLengthUrbanSchooling = map(schoolingUrban, 0, 100, 0, sectionWidth - 20);
     stroke(220, 150, 255);
     dataLine(x + 10, lineYUrbanSchooling, x + 10 + lineLengthUrbanSchooling, lineYUrbanSchooling,
       stateName, "10+ yrs of schooling (Urban)", schoolingUrban);
 
     // Horizontal line: attended school age 6+, rural
-    float lineYRuralAttended = y + sectionHeight * 4.75 / 6;
+    float lineYRuralAttended = y + sectionHeight * 0.58;
     float lineLengthRuralAttended = map(attendedSchoolRural, 0, 100, 0, sectionWidth - 20);
     stroke(255, 200, 100);
     dataLine(x + 10, lineYRuralAttended, x + 10 + lineLengthRuralAttended, lineYRuralAttended,
       stateName, "Attended school, age 6+ (Rural)", attendedSchoolRural);
 
     // Horizontal line: attended school age 6+, urban
-    float lineYUrbanAttended = y + sectionHeight * 6 / 7;
+    float lineYUrbanAttended = y + sectionHeight * 0.64;
     float lineLengthUrbanAttended = map(attendedSchoolUrban, 0, 100, 0, sectionWidth - 20);
     stroke(100, 200, 255);
     dataLine(x + 10, lineYUrbanAttended, x + 10 + lineLengthUrbanAttended, lineYUrbanAttended,
@@ -214,15 +217,14 @@ void stitchLine(float x1, float y1, float x2, float y2) {
   }
 }
 
-// White running-stitch frame, just inside each box's edge
+// Thin white running-stitch frame right on the box edge (subtle, not a bold box)
 void drawStitchBorder(float x, float y, float w, float h) {
   stroke(255); // white thread
-  strokeWeight(1);
-  float in = 3; // how far inside the box edge
-  stitchLine(x + in, y + in, x + w - in, y + in);         // top
-  stitchLine(x + w - in, y + in, x + w - in, y + h - in); // right
-  stitchLine(x + w - in, y + h - in, x + in, y + h - in); // bottom
-  stitchLine(x + in, y + h - in, x + in, y + in);         // left
+  strokeWeight(0.5);
+  stitchLine(x, y, x + w, y);         // top
+  stitchLine(x + w, y, x + w, y + h); // right
+  stitchLine(x + w, y + h, x, y + h); // bottom
+  stitchLine(x, y + h, x, y);         // left
 }
 
 // State name on top of the box, shrunk (and wrapped if needed) to fit
