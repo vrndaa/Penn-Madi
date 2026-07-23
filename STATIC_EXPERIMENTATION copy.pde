@@ -203,8 +203,8 @@ void dataLine(float x1, float y1, float x2, float y2, String state, String label
 void stitchLine(float x1, float y1, float x2, float y2) {
   float d = dist(x1, y1, x2, y2);
   if (d <= 0) return;
-  float dash = 6;
-  float gap = 4;
+  float dash = 4;
+  float gap = 2;
   float ux = (x2 - x1) / d;
   float uy = (y2 - y1) / d;
   for (float t = 0; t < d; t += dash + gap) {
@@ -230,7 +230,7 @@ void drawGrid(int left, int top, int cols, int rows, int cw, int ch) {
 // State name on top of the box, shrunk (and wrapped if needed) to fit
 void drawStateName(String name, float boxX, float boxY, float boxW) {
   fill(255); // white text
-  textAlign(CENTER, TOP);
+  textAlign(RIGHT, TOP);
   float maxW = boxW - 6;
 
   // Try to fit on one line, shrinking the size down to a floor
@@ -242,7 +242,7 @@ void drawStateName(String name, float boxX, float boxY, float boxW) {
   }
   textSize(ts);
   if (textWidth(name) <= maxW) {
-    text(name, boxX + boxW / 2, boxY + 4);
+    text(name, boxX + boxW - 4, boxY + 9);
     return;
   }
 
@@ -262,9 +262,9 @@ void drawStateName(String name, float boxX, float boxY, float boxW) {
     line2 = (line2.length() == 0) ? words[i] : line2 + " " + words[i];
     i++;
   }
-  text(line1, boxX + boxW / 2, boxY + 3);
+  text(line1, boxX + boxW - 4, boxY + 8);
   if (line2.length() > 0) {
-    text(line2, boxX + boxW / 2, boxY + 13);
+    text(line2, boxX + boxW - 4, boxY + 18);
   }
 }
 
