@@ -31,6 +31,10 @@ String[] measureNames = {
   "Worked & paid in cash", "Owns a house / land", "Bank / savings account"
 };
 
+// Old palette scheme: Rural = a darker tone of the hue, Urban = a lighter tone
+color rural(color base) { return lerpColor(base, color(0), 0.30); }
+color urban(color base) { return lerpColor(base, color(255), 0.33); }
+
 // Filled segments recorded each frame so we can show a tooltip on hover
 class Seg {
   float x, y, w, h;
@@ -171,7 +175,7 @@ void drawLegend() {
 
   fill(INK);
   textSize(13);
-  text("The six measures", lx, y); y += 24;
+  text("The six measures   ·   urban / rural tone", lx, y); y += 24;
   for (int m = 0; m < 6; m++) y = legendRow(lx, y, measureNames[m], metricBase[m]);
 
   y += 12;
@@ -180,14 +184,14 @@ void drawLegend() {
   text("Hover over any band to read its exact value.", lx, y, lw, 40);
 }
 
-float legendRow(float lx, float y, String label, color c) {
+float legendRow(float lx, float y, String label, color base) {
   noStroke();
-  fill(c);
-  rect(lx, y + 1, 16, 12);
+  fill(urban(base));  rect(lx, y + 1, 16, 12);        // urban (lighter) = left half
+  fill(rural(base));  rect(lx + 18, y + 1, 16, 12);    // rural (darker) = right half
   fill(INK);
   textAlign(LEFT, TOP);
   textSize(13);
-  text(label, lx + 26, y);
+  text(label, lx + 44, y);
   return y + 22;
 }
 
@@ -250,7 +254,7 @@ void drawHalf(float[] vals, float hx, float hy, float hw, float hh, String state
   noStroke();
   for (int m = 0; m < 6; m++) {
     float segH = vals[m] / sum * hh;
-    fill(metricBase[m]);
+    fill(pop.equals("Urban") ? urban(metricBase[m]) : rural(metricBase[m]));
     rect(hx, yy, hw, segH);
     segs.add(new Seg(hx, yy, hw, segH, state, pop, measureNames[m], vals[m]));
     yy += segH;
