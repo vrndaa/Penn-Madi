@@ -154,9 +154,9 @@ void drawPageIndicator() {
   text(page + " / 2", px + pw / 2, py + ph / 2 + 1);
 
   fill(SUBINK);
-  textAlign(RIGHT, TOP);
-  textSize(11);
-  text("press space to switch", px + pw, py + ph + 6);
+  textAlign(CENTER, TOP);
+  textSize(10);
+  text("space / tap", px + pw / 2, py + ph + 4);
 }
 
 // ---- Left column: title + description --------------------------------------
