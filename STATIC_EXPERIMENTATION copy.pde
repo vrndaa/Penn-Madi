@@ -10,6 +10,11 @@ PFont bodyFont;
 PFont headingFont;
 PFont headingItalicFont;
 
+// Which of the two pages is showing. 1 = joined pai (flat hues, stitched lattice),
+// 2 = exploratory split boxes (tone-differentiated, separated, small urban/rural stitch).
+// Press SPACE (or 1 / 2) to switch — this maps directly to a tab/toggle button on the web.
+int page = 1;
+
 // Page layout (computed in setup once the screen size is known)
 float INNER = 60;   // equal inner margin on all four sides
 float dividerX, leftColX, leftColRight, rightColX, rightColRight;
@@ -18,7 +23,8 @@ float dividerX, leftColX, leftColRight, rightColX, rightColRight;
 color BG     = color(235, 226, 202);
 color INK    = color(45, 38, 30);
 color SUBINK = color(95, 84, 66);
-color BOXLINE = color(203, 189, 152); // faint outline around each state box
+color BOXLINE = color(203, 189, 152); // faint outline around each state box (page 2 only)
+color THREAD  = color(250, 244, 230); // stitching thread color (reads on any fill hue)
 
 // Ikat border palette (pink)
 color IKAT_PINK  = color(224, 66, 140);
@@ -31,7 +37,8 @@ String[] measureNames = {
   "Worked & paid in cash", "Owns a house / land", "Bank / savings account"
 };
 
-// Old palette scheme: Rural = a darker tone of the hue, Urban = a lighter tone
+// Page 2's tone scheme: Rural = a darker tone of the hue, Urban = a lighter tone.
+// Page 1 uses metricBase directly (flat, same hue for both urban and rural).
 color rural(color base) { return lerpColor(base, color(0), 0.30); }
 color urban(color base) { return lerpColor(base, color(255), 0.33); }
 
@@ -85,6 +92,12 @@ void setup() {
   }
 }
 
+void keyPressed() {
+  if (key == ' ') page = (page == 1) ? 2 : 1;
+  else if (key == '1') page = 1;
+  else if (key == '2') page = 2;
+}
+
 void draw() {
   background(BG);
   segs.clear();
@@ -92,6 +105,7 @@ void draw() {
   drawHeading();
   drawLegend();
   drawSections();
+  drawPageIndicator();
   drawTooltip();
 }
 
@@ -123,6 +137,26 @@ void diamond(float cx, float cy, float s) {
   fill(IKAT_PINK);
   float t = s * 0.42;
   quad(cx, cy - t / 2, cx + t / 2, cy, cx, cy + t / 2, cx - t / 2, cy);
+}
+
+// Small "page 1/2" pill + toggle hint, top-right inside the border
+void drawPageIndicator() {
+  float pw = 86, ph = 30;
+  float px = width - INNER - pw;
+  float py = INNER * 0.4;
+  noStroke();
+  fill(IKAT_PINK);
+  rect(px, py, pw, ph, ph / 2);
+  fill(255);
+  textFont(bodyFont);
+  textAlign(CENTER, CENTER);
+  textSize(14);
+  text(page + " / 2", px + pw / 2, py + ph / 2 + 1);
+
+  fill(SUBINK);
+  textAlign(RIGHT, TOP);
+  textSize(11);
+  text("press space to switch", px + pw, py + ph + 6);
 }
 
 // ---- Left column: title + description --------------------------------------
@@ -157,6 +191,7 @@ void drawLegend() {
   float lx = leftColX;
   float lw = leftColRight - leftColX;
   float y = height * 0.44;
+  boolean page1 = (page == 1);
 
   fill(INK);
   textAlign(LEFT, TOP);
@@ -168,15 +203,21 @@ void drawLegend() {
   textFont(bodyFont);
   fill(SUBINK);
   textSize(13);
-  text("Each box is one state — the left half is urban, the right half is rural, touching at the "
-    + "centre. In each half the six measures are stacked and normalized to fill it, so you compare "
-    + "the mix of women's outcomes, urban vs rural.", lx, y, lw, 90);
+  String how = page1
+    ? "Every state is a small woven cloth: the left half is urban, the right half is rural, "
+      + "joined edge to edge with the rest of the mat. In each half the six measures are stacked "
+      + "and normalized to fill it. Hover to see exactly what you're touching."
+    : "Each box is one state — the left half is urban, the right half is rural, separated so you "
+      + "can explore each one on its own. In each half the six measures are stacked and normalized "
+      + "to fill it, so you compare the mix of women's outcomes, urban vs rural.";
+  text(how, lx, y, lw, 90);
   y += 88;
 
   fill(INK);
   textSize(13);
-  text("The six measures   ·   urban / rural tone", lx, y); y += 24;
-  for (int m = 0; m < 6; m++) y = legendRow(lx, y, measureNames[m], metricBase[m]);
+  text(page1 ? "The six measures" : "The six measures   ·   urban / rural tone", lx, y);
+  y += 24;
+  for (int m = 0; m < 6; m++) y = legendRow(lx, y, measureNames[m], metricBase[m], page1);
 
   y += 12;
   fill(SUBINK);
@@ -184,14 +225,21 @@ void drawLegend() {
   text("Hover over any band to read its exact value.", lx, y, lw, 40);
 }
 
-float legendRow(float lx, float y, String label, color base) {
+float legendRow(float lx, float y, String label, color base, boolean flat) {
   noStroke();
-  fill(urban(base));  rect(lx, y + 1, 16, 12);        // urban (lighter) = left half
-  fill(rural(base));  rect(lx + 18, y + 1, 16, 12);    // rural (darker) = right half
+  float textX;
+  if (flat) {
+    fill(base); rect(lx, y + 1, 16, 12);
+    textX = lx + 26;
+  } else {
+    fill(urban(base));  rect(lx, y + 1, 16, 12);        // urban (lighter) = left half
+    fill(rural(base));  rect(lx + 18, y + 1, 16, 12);    // rural (darker) = right half
+    textX = lx + 44;
+  }
   fill(INK);
   textAlign(LEFT, TOP);
   textSize(13);
-  text(label, lx + 44, y);
+  text(label, textX, y);
   return y + 22;
 }
 
@@ -212,12 +260,17 @@ void drawSections() {
     float cy = INNER + (i / cols) * cellH;
     drawStateBox(row, cx, cy, cellW, cellH);
   }
+
+  if (page == 1) {
+    drawStitchLattice(rightColX, INNER, cols, rows, cellW, cellH);
+  }
 }
 
 void drawStateBox(TableRow row, float cx, float cy, float cw, float ch) {
+  boolean page1 = (page == 1);
   String state = trim(row.getString(0));
   float nameH = 15;
-  float pad = 3;
+  float pad = page1 ? 0 : 3;
   float bx = cx + pad;
   float by = cy + nameH;
   float bw = cw - pad * 2;
@@ -230,22 +283,30 @@ void drawStateBox(TableRow row, float cx, float cy, float cw, float ch) {
   drawFittedName(displayName(state), bx, cy + 1, bw);
 
   // urban = odd columns (3,5,7,9,11,13), rural = even (2,4,6,8,10,12)
-  float[] urban = { row.getFloat(3), row.getFloat(5), row.getFloat(7), row.getFloat(9), row.getFloat(11), row.getFloat(13) };
-  float[] rural = { row.getFloat(2), row.getFloat(4), row.getFloat(6), row.getFloat(8), row.getFloat(10), row.getFloat(12) };
+  float[] urbanVals = { row.getFloat(3), row.getFloat(5), row.getFloat(7), row.getFloat(9), row.getFloat(11), row.getFloat(13) };
+  float[] ruralVals = { row.getFloat(2), row.getFloat(4), row.getFloat(6), row.getFloat(8), row.getFloat(10), row.getFloat(12) };
 
   float halfW = bw / 2;
-  drawHalf(urban, bx, by, halfW, bh, state, "Urban");                 // left
-  drawHalf(rural, bx + halfW, by, bw - halfW, bh, state, "Rural");    // right, no gap
+  boolean useTone = !page1; // page 1 = flat hue for both halves; page 2 = urban lighter / rural darker
+  drawHalf(urbanVals, bx, by, halfW, bh, state, "Urban", useTone);                 // left
+  drawHalf(ruralVals, bx + halfW, by, bw - halfW, bh, state, "Rural", useTone);    // right, no gap
 
-  // faint outline around the whole box
-  noFill();
-  stroke(BOXLINE);
-  strokeWeight(1);
-  rect(bx, by, bw, bh);
+  if (!page1) {
+    // page 2: boxes are separated — faint outline, plus a small stitch at the urban/rural seam
+    noFill();
+    stroke(BOXLINE);
+    strokeWeight(1);
+    rect(bx, by, bw, bh);
+
+    stroke(THREAD);
+    strokeWeight(0.6);
+    stitchLine(bx + halfW, by, bx + halfW, by + bh, 3, 3);
+  }
 }
 
-// One half = the six measures stacked and normalized to fill the height
-void drawHalf(float[] vals, float hx, float hy, float hw, float hh, String state, String pop) {
+// One half = the six measures stacked and normalized to fill the height.
+// useTone: true = page 2's urban-lighter/rural-darker tone; false = page 1's flat metricBase hue.
+void drawHalf(float[] vals, float hx, float hy, float hw, float hh, String state, String pop, boolean useTone) {
   float sum = 0;
   for (float v : vals) sum += v;
   if (sum <= 0) return;
@@ -254,10 +315,38 @@ void drawHalf(float[] vals, float hx, float hy, float hw, float hh, String state
   noStroke();
   for (int m = 0; m < 6; m++) {
     float segH = vals[m] / sum * hh;
-    fill(pop.equals("Urban") ? urban(metricBase[m]) : rural(metricBase[m]));
+    color c = useTone ? (pop.equals("Urban") ? urban(metricBase[m]) : rural(metricBase[m])) : metricBase[m];
+    fill(c);
     rect(hx, yy, hw, segH);
     segs.add(new Seg(hx, yy, hw, segH, state, pop, measureNames[m], vals[m]));
     yy += segH;
+  }
+}
+
+// Page 1: a running-stitch lattice over the shared seams between joined state boxes,
+// so the whole grid reads as one stitched mat rather than separate tiles.
+void drawStitchLattice(float left, float top, int cols, int rows, float cw, float ch) {
+  stroke(THREAD);
+  strokeWeight(0.8);
+  float right = left + cols * cw;
+  float bottom = top + rows * ch;
+  for (int c = 0; c <= cols; c++) {
+    stitchLine(left + c * cw, top, left + c * cw, bottom, 5, 4);
+  }
+  for (int r = 0; r <= rows; r++) {
+    stitchLine(left, top + r * ch, right, top + r * ch, 5, 4);
+  }
+}
+
+// A dashed running-stitch line with configurable dash/gap length
+void stitchLine(float x1, float y1, float x2, float y2, float dash, float gap) {
+  float d = dist(x1, y1, x2, y2);
+  if (d <= 0) return;
+  float ux = (x2 - x1) / d;
+  float uy = (y2 - y1) / d;
+  for (float t = 0; t < d; t += dash + gap) {
+    float et = min(t + dash, d);
+    line(x1 + ux * t, y1 + uy * t, x1 + ux * et, y1 + uy * et);
   }
 }
 
