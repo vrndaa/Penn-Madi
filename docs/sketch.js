@@ -252,18 +252,24 @@ function drawSections() {
 
   const availW = rightColRight - rightColX;
   const availH = (height - INNER) - INNER;
-  const cellW = availW / cols;
-  const cellH = availH / rows;
+  // Cells stay square — take the tighter of the two fits, then center the
+  // grid in whichever direction has leftover room (fixes stretched boxes
+  // when the browser window's aspect ratio doesn't match a 6-ish-by-6 grid).
+  const cellSize = min(availW / cols, availH / rows);
+  const cellW = cellSize;
+  const cellH = cellSize;
+  const gridX = rightColX + (availW - cols * cellSize) / 2;
+  const gridY = INNER + (availH - rows * cellSize) / 2;
 
   for (let i = 0; i < n; i++) {
     const row = drawRows[i];
-    const cx = rightColX + (i % cols) * cellW;
-    const cy = INNER + floor(i / cols) * cellH;
+    const cx = gridX + (i % cols) * cellW;
+    const cy = gridY + floor(i / cols) * cellH;
     drawStateBox(row, cx, cy, cellW, cellH);
   }
 
   if (page === 1) {
-    drawStitchLattice(rightColX, INNER, cols, rows, cellW, cellH);
+    drawStitchLattice(gridX, gridY, cols, rows, cellW, cellH);
   }
 }
 

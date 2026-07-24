@@ -251,18 +251,24 @@ void drawSections() {
 
   float availW = rightColRight - rightColX;
   float availH = (height - INNER) - INNER;
-  float cellW = availW / cols;
-  float cellH = availH / rows;
+  // Cells stay square — take the tighter of the two fits, then center the
+  // grid in whichever direction has leftover room (fixes stretched boxes
+  // when the window's aspect ratio doesn't match a 6-ish-by-6 grid).
+  float cellSize = min(availW / cols, availH / rows);
+  float cellW = cellSize;
+  float cellH = cellSize;
+  float gridX = rightColX + (availW - cols * cellSize) / 2;
+  float gridY = INNER + (availH - rows * cellSize) / 2;
 
   for (int i = 0; i < n; i++) {
     TableRow row = drawRows.get(i);
-    float cx = rightColX + (i % cols) * cellW;
-    float cy = INNER + (i / cols) * cellH;
+    float cx = gridX + (i % cols) * cellW;
+    float cy = gridY + (i / cols) * cellH;
     drawStateBox(row, cx, cy, cellW, cellH);
   }
 
   if (page == 1) {
-    drawStitchLattice(rightColX, INNER, cols, rows, cellW, cellH);
+    drawStitchLattice(gridX, gridY, cols, rows, cellW, cellH);
   }
 }
 
