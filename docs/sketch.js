@@ -387,7 +387,7 @@ function displayName(full) {
 function drawFittedName(name, x, y, maxW) {
   // Fixed size for a consistent look across every box; only shrink (with a
   // higher floor, so it never gets illegibly small) if a name truly overflows.
-  const base = 10.5;
+  const base = 4;
   textSize(base);
   if (textWidth(name) <= maxW) {
     text(name, x, y);
