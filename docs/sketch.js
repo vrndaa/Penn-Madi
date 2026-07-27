@@ -276,14 +276,14 @@ function drawStateBox(row, cx, cy, cw, ch) {
   const page1 = (page === 1);
   const state = (row.getString(0) || "").trim();
   const pad = page1 ? 0 : 3;
-  const nameH = page1 ? 0 : 16; // page 2 only: a header strip above the box for the state name
+  const nameH = page1 ? 0 : 20; // page 2 only: a header strip above the box for the state name
   const bx = cx + pad;
   const by = cy + pad + nameH;
   const bw = cw - pad * 2;
   const bh = ch - pad * 2 - nameH;
 
   if (!page1) {
-    fill(INK);
+    fill(SUBINK);
     textAlign(LEFT, TOP);
     textFont(bodyFont);
     textStyle(NORMAL);
