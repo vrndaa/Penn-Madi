@@ -84,10 +84,9 @@ function buildRows() {
   }
 }
 
-// Page 2's tone scheme: rural = darker tone, urban = lighter tone.
-// Page 1 uses metricBase directly (flat, same hue for both urban and rural).
-function rural(base) { return lerpColor(base, color(0), 0.30); }
-function urban(base) { return lerpColor(base, color(255), 0.33); }
+// Page 2's tone scheme: urban keeps the base hue (same as page 1), rural is a
+// lightened version of it. Page 1 uses metricBase directly for both halves.
+function lighten(base) { return lerpColor(base, color(255), 0.42); }
 
 function keyPressed() {
   if (key === " ") page = (page === 1) ? 2 : 1;
@@ -192,7 +191,7 @@ function drawHeading() {
   fill(SUBINK);
   textFont(bodyFont);
   textSize(15);
-  text(desc, leftColX, titleY + 52, leftColRight - leftColX, 220);
+  text(desc, leftColX, titleY + 92, leftColRight - leftColX, 220);
 }
 
 // ---- Left column: how-to-read legend ---------------------------------------
@@ -241,8 +240,8 @@ function legendRow(lx, y, label, base, flat) {
     fill(base); rect(lx, y + 1, 16, 12);
     textX = lx + 26;
   } else {
-    fill(urban(base)); rect(lx, y + 1, 16, 12);       // urban (lighter) = left half
-    fill(rural(base)); rect(lx + 18, y + 1, 16, 12);   // rural (darker) = right half
+    fill(base); rect(lx, y + 1, 16, 12);                // urban = base hue = left half
+    fill(lighten(base)); rect(lx + 18, y + 1, 16, 12);   // rural = lightened = right half
     textX = lx + 44;
   }
   fill(INK);
@@ -260,14 +259,12 @@ function drawSections() {
 
   const availW = rightColRight - rightColX;
   const availH = (height - INNER) - INNER;
-  // Cells stay square — take the tighter of the two fits, then center the
-  // grid in whichever direction has leftover room (fixes stretched boxes
-  // when the browser window's aspect ratio doesn't match a 6-ish-by-6 grid).
-  const cellSize = min(availW / cols, availH / rows);
-  const cellW = cellSize;
-  const cellH = cellSize;
-  const gridX = rightColX + (availW - cols * cellSize) / 2;
-  const gridY = INNER + (availH - rows * cellSize) / 2;
+  // Fill the whole available region edge-to-edge (no leftover gap between the
+  // grid and the border). 36 states = a full 6x6 grid, so cells divide evenly.
+  const cellW = availW / cols;
+  const cellH = availH / rows;
+  const gridX = rightColX;
+  const gridY = INNER;
 
   for (let i = 0; i < n; i++) {
     const row = drawRows[i];
@@ -285,17 +282,26 @@ function drawStateBox(row, cx, cy, cw, ch) {
   const page1 = (page === 1);
   const state = (row.getString(0) || "").trim();
   const pad = page1 ? 0 : 3;
+  const nameH = page1 ? 0 : 16; // page 2 only: a header strip above the box for the state name
   const bx = cx + pad;
-  const by = cy + pad;
+  const by = cy + pad + nameH;
   const bw = cw - pad * 2;
-  const bh = ch - pad * 2;
+  const bh = ch - pad * 2 - nameH;
+
+  if (!page1) {
+    fill(INK);
+    textAlign(LEFT, TOP);
+    textFont(bodyFont);
+    textStyle(NORMAL);
+    drawFittedName(displayName(state), bx, cy + pad, bw);
+  }
 
   // urban = odd columns (3,5,7,9,11,13), rural = even (2,4,6,8,10,12)
   const urbanVals = [3, 5, 7, 9, 11, 13].map((c) => row.getNum(c));
   const ruralVals = [2, 4, 6, 8, 10, 12].map((c) => row.getNum(c));
 
   const halfW = bw / 2;
-  const useTone = !page1; // page 1 = flat hue for both halves; page 2 = urban lighter / rural darker
+  const useTone = !page1; // page 1 = flat hue for both halves; page 2 = urban base / rural lightened
   drawHalf(urbanVals, bx, by, halfW, bh, state, "Urban", useTone);
   drawHalf(ruralVals, bx + halfW, by, bw - halfW, bh, state, "Rural", useTone);
 
@@ -331,17 +337,18 @@ function drawHalf(vals, hx, hy, hw, hh, state, pop, useTone) {
   let yy = hy;
   noStroke();
   for (let m = 0; m < 6; m++) {
-    let segH;
+    let segH, c;
     if (vals[m] <= 0) {
       segH = ZERO_GAP;
-      fill(BG); // zero value: same colour as the page background, not a collapsed 0px band
+      c = BG; // zero value: same colour as the page background, not a collapsed 0px band
     } else {
       segH = (vals[m] / sum) * usableH;
-      const c = useTone ? (pop === "Urban" ? urban(metricBase[m]) : rural(metricBase[m])) : metricBase[m];
-      fill(c);
+      // page 2: urban = the plain measure hue (same as page 1), rural = a lightened tint of it
+      c = useTone ? (pop === "Urban" ? metricBase[m] : lighten(metricBase[m])) : metricBase[m];
     }
+    fill(c);
     rect(hx, yy, hw, segH);
-    segs.push({ x: hx, y: yy, w: hw, h: segH, state, pop, label: measureNames[m], value: vals[m] });
+    segs.push({ x: hx, y: yy, w: hw, h: segH, state, pop, label: measureNames[m], value: vals[m], col: c });
     yy += segH;
   }
 }
@@ -373,6 +380,25 @@ function stitchLine(x1, y1, x2, y2, dash, gap) {
   }
 }
 
+// Page 2 only: shorten the longest names so they stay legible above the box
+function displayName(full) {
+  if (full.indexOf("Andaman") >= 0) return "Andaman";
+  if (full.indexOf("Dadra") >= 0) return "Dadra & N.H.";
+  return full;
+}
+
+// Page 2 only: draw a name above the box, shrinking the size until it fits
+function drawFittedName(name, x, y, maxW) {
+  let ts = 11;
+  while (ts > 7) {
+    textSize(ts);
+    if (textWidth(name) <= maxW) break;
+    ts -= 0.5;
+  }
+  textSize(ts);
+  text(name, x, y);
+}
+
 // Tooltip for whichever filled band the mouse (or a touch) is over
 function drawTooltip() {
   let hit = null;
@@ -385,23 +411,42 @@ function drawTooltip() {
   if (!hit) return;
 
   const l1 = hit.state + " · " + hit.pop;
-  const l2 = hit.label + ": " + nf(hit.value, 0, 1) + "%";
+  const l2 = hit.label;
+  const l3 = nf(hit.value, 0, 1) + "%";
+
   textFont(bodyFont);
   textStyle(NORMAL);
   textAlign(LEFT, TOP);
-  textSize(12);
-  const boxW = max(textWidth(l1), textWidth(l2)) + 12;
-  const boxH = 38;
-  let tx = mouseX + 12;
-  let ty = mouseY + 12;
-  if (tx + boxW > width) tx = mouseX - boxW - 12;
-  if (ty + boxH > height) ty = mouseY - boxH - 12;
+  const swatch = 10, gapAfterSwatch = 7;
+  textSize(11);
+  const w1 = textWidth(l1);
+  textSize(13);
+  const w2 = swatch + gapAfterSwatch + textWidth(l2 + "   " + l3);
 
-  stroke(TOOLTIP_INK);
-  strokeWeight(1);
-  fill(250, 244, 232);
-  rect(tx, ty, boxW, boxH);
+  const padX = 11, padY = 9;
+  const boxW = max(w1, w2) + padX * 2;
+  const boxH = 42;
+  let tx = mouseX + 14;
+  let ty = mouseY + 14;
+  if (tx + boxW > width) tx = mouseX - boxW - 14;
+  if (ty + boxH > height) ty = mouseY - boxH - 14;
+
+  noStroke();
+  fill(0, 0, 0, 60); // soft shadow instead of a hard border
+  rect(tx + 2, ty + 3, boxW, boxH, 9);
+
+  fill(250, 245, 236);
+  rect(tx, ty, boxW, boxH, 9);
+
   fill(TOOLTIP_INK);
-  text(l1, tx + 6, ty + 5);
-  text(l2, tx + 6, ty + 20);
+  textSize(11);
+  text(l1, tx + padX, ty + padY - 2);
+
+  noStroke();
+  fill(hit.col);
+  rect(tx + padX, ty + padY + 15, swatch, swatch, 2);
+
+  fill(TOOLTIP_INK);
+  textSize(13);
+  text(l2 + "   " + l3, tx + padX + swatch + gapAfterSwatch, ty + padY + 12);
 }

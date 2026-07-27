@@ -38,19 +38,19 @@ String[] measureNames = {
   "Worked & paid in cash", "Owns a house / land", "Bank / savings account"
 };
 
-// Page 2's tone scheme: Rural = a darker tone of the hue, Urban = a lighter tone.
-// Page 1 uses metricBase directly (flat, same hue for both urban and rural).
-color rural(color base) { return lerpColor(base, color(0), 0.30); }
-color urban(color base) { return lerpColor(base, color(255), 0.33); }
+// Page 2's tone scheme: urban keeps the base hue (same as page 1), rural is a
+// lightened version of it. Page 1 uses metricBase directly for both halves.
+color lighten(color base) { return lerpColor(base, color(255), 0.42); }
 
 // Filled segments recorded each frame so we can show a tooltip on hover
 class Seg {
   float x, y, w, h;
   String state, pop, label;
   float value;
-  Seg(float x, float y, float w, float h, String state, String pop, String label, float value) {
+  color col;
+  Seg(float x, float y, float w, float h, String state, String pop, String label, float value, color col) {
     this.x = x; this.y = y; this.w = w; this.h = h;
-    this.state = state; this.pop = pop; this.label = label; this.value = value;
+    this.state = state; this.pop = pop; this.label = label; this.value = value; this.col = col;
   }
 }
 java.util.ArrayList<Seg> segs = new java.util.ArrayList<Seg>();
@@ -184,7 +184,7 @@ void drawHeading() {
   fill(SUBINK);
   textFont(bodyFont);
   textSize(15);
-  text(desc, leftColX, titleY + 52, leftColRight - leftColX, 220);
+  text(desc, leftColX, titleY + 92, leftColRight - leftColX, 220);
 }
 
 // ---- Left column: how-to-read legend ---------------------------------------
@@ -233,8 +233,8 @@ float legendRow(float lx, float y, String label, color base, boolean flat) {
     fill(base); rect(lx, y + 1, 16, 12);
     textX = lx + 26;
   } else {
-    fill(urban(base));  rect(lx, y + 1, 16, 12);        // urban (lighter) = left half
-    fill(rural(base));  rect(lx + 18, y + 1, 16, 12);    // rural (darker) = right half
+    fill(base);          rect(lx, y + 1, 16, 12);        // urban = base hue = left half
+    fill(lighten(base)); rect(lx + 18, y + 1, 16, 12);   // rural = lightened = right half
     textX = lx + 44;
   }
   fill(INK);
@@ -252,14 +252,12 @@ void drawSections() {
 
   float availW = rightColRight - rightColX;
   float availH = (height - INNER) - INNER;
-  // Cells stay square — take the tighter of the two fits, then center the
-  // grid in whichever direction has leftover room (fixes stretched boxes
-  // when the window's aspect ratio doesn't match a 6-ish-by-6 grid).
-  float cellSize = min(availW / cols, availH / rows);
-  float cellW = cellSize;
-  float cellH = cellSize;
-  float gridX = rightColX + (availW - cols * cellSize) / 2;
-  float gridY = INNER + (availH - rows * cellSize) / 2;
+  // Fill the whole available region edge-to-edge (no leftover gap between the
+  // grid and the border). 36 states = a full 6x6 grid, so cells divide evenly.
+  float cellW = availW / cols;
+  float cellH = availH / rows;
+  float gridX = rightColX;
+  float gridY = INNER;
 
   for (int i = 0; i < n; i++) {
     TableRow row = drawRows.get(i);
@@ -277,17 +275,25 @@ void drawStateBox(TableRow row, float cx, float cy, float cw, float ch) {
   boolean page1 = (page == 1);
   String state = trim(row.getString(0));
   float pad = page1 ? 0 : 3;
+  float nameH = page1 ? 0 : 16; // page 2 only: a header strip above the box for the state name
   float bx = cx + pad;
-  float by = cy + pad;
+  float by = cy + pad + nameH;
   float bw = cw - pad * 2;
-  float bh = ch - pad * 2;
+  float bh = ch - pad * 2 - nameH;
+
+  if (!page1) {
+    fill(INK);
+    textAlign(LEFT, TOP);
+    textFont(bodyFont);
+    drawFittedName(displayName(state), bx, cy + pad, bw);
+  }
 
   // urban = odd columns (3,5,7,9,11,13), rural = even (2,4,6,8,10,12)
   float[] urbanVals = { row.getFloat(3), row.getFloat(5), row.getFloat(7), row.getFloat(9), row.getFloat(11), row.getFloat(13) };
   float[] ruralVals = { row.getFloat(2), row.getFloat(4), row.getFloat(6), row.getFloat(8), row.getFloat(10), row.getFloat(12) };
 
   float halfW = bw / 2;
-  boolean useTone = !page1; // page 1 = flat hue for both halves; page 2 = urban lighter / rural darker
+  boolean useTone = !page1; // page 1 = flat hue for both halves; page 2 = urban base / rural lightened
   drawHalf(urbanVals, bx, by, halfW, bh, state, "Urban", useTone);                 // left
   drawHalf(ruralVals, bx + halfW, by, bw - halfW, bh, state, "Rural", useTone);    // right, no gap
 
@@ -324,16 +330,18 @@ void drawHalf(float[] vals, float hx, float hy, float hw, float hh, String state
   noStroke();
   for (int m = 0; m < 6; m++) {
     float segH;
+    color c;
     if (vals[m] <= 0) {
       segH = ZERO_GAP;
-      fill(BG); // zero value: same colour as the page background, not a collapsed 0px band
+      c = BG; // zero value: same colour as the page background, not a collapsed 0px band
     } else {
       segH = vals[m] / sum * usableH;
-      color c = useTone ? (pop.equals("Urban") ? urban(metricBase[m]) : rural(metricBase[m])) : metricBase[m];
-      fill(c);
+      // page 2: urban = the plain measure hue (same as page 1), rural = a lightened tint of it
+      c = useTone ? (pop.equals("Urban") ? metricBase[m] : lighten(metricBase[m])) : metricBase[m];
     }
+    fill(c);
     rect(hx, yy, hw, segH);
-    segs.add(new Seg(hx, yy, hw, segH, state, pop, measureNames[m], vals[m]));
+    segs.add(new Seg(hx, yy, hw, segH, state, pop, measureNames[m], vals[m], c));
     yy += segH;
   }
 }
@@ -365,6 +373,25 @@ void stitchLine(float x1, float y1, float x2, float y2, float dash, float gap) {
   }
 }
 
+// Page 2 only: shorten the longest names so they stay legible above the box
+String displayName(String full) {
+  if (full.indexOf("Andaman") >= 0) return "Andaman";
+  if (full.indexOf("Dadra") >= 0) return "Dadra & N.H.";
+  return full;
+}
+
+// Page 2 only: draw a name above the box, shrinking the size until it fits
+void drawFittedName(String name, float x, float y, float maxW) {
+  float ts = 11;
+  while (ts > 7) {
+    textSize(ts);
+    if (textWidth(name) <= maxW) break;
+    ts -= 0.5;
+  }
+  textSize(ts);
+  text(name, x, y);
+}
+
 // Tooltip for whichever filled band the mouse is over
 void drawTooltip() {
   Seg hit = null;
@@ -377,22 +404,41 @@ void drawTooltip() {
   if (hit == null) return;
 
   String l1 = hit.state + " · " + hit.pop;
-  String l2 = hit.label + ": " + nf(hit.value, 0, 1) + "%";
+  String l2 = hit.label;
+  String l3 = nf(hit.value, 0, 1) + "%";
+
   textFont(bodyFont);
   textAlign(LEFT, TOP);
-  textSize(12);
-  float boxW = max(textWidth(l1), textWidth(l2)) + 12;
-  float boxH = 38;
-  float tx = mouseX + 12;
-  float ty = mouseY + 12;
-  if (tx + boxW > width) tx = mouseX - boxW - 12;
-  if (ty + boxH > height) ty = mouseY - boxH - 12;
+  float swatch = 10, gapAfterSwatch = 7;
+  textSize(11);
+  float w1 = textWidth(l1);
+  textSize(13);
+  float w2 = swatch + gapAfterSwatch + textWidth(l2 + "   " + l3);
 
-  stroke(TOOLTIP_INK);
-  strokeWeight(1);
-  fill(250, 244, 232);
-  rect(tx, ty, boxW, boxH);
+  float padX = 11, padY = 9;
+  float boxW = max(w1, w2) + padX * 2;
+  float boxH = 42;
+  float tx = mouseX + 14;
+  float ty = mouseY + 14;
+  if (tx + boxW > width) tx = mouseX - boxW - 14;
+  if (ty + boxH > height) ty = mouseY - boxH - 14;
+
+  noStroke();
+  fill(0, 0, 0, 60); // soft shadow instead of a hard border
+  rect(tx + 2, ty + 3, boxW, boxH, 9);
+
+  fill(250, 245, 236);
+  rect(tx, ty, boxW, boxH, 9);
+
   fill(TOOLTIP_INK);
-  text(l1, tx + 6, ty + 5);
-  text(l2, tx + 6, ty + 20);
+  textSize(11);
+  text(l1, tx + padX, ty + padY - 2);
+
+  noStroke();
+  fill(hit.col);
+  rect(tx + padX, ty + padY + 15, swatch, swatch, 2);
+
+  fill(TOOLTIP_INK);
+  textSize(13);
+  text(l2 + "   " + l3, tx + padX + swatch + gapAfterSwatch, ty + padY + 12);
 }
