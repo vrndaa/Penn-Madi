@@ -276,18 +276,11 @@ void drawSections() {
 void drawStateBox(TableRow row, float cx, float cy, float cw, float ch) {
   boolean page1 = (page == 1);
   String state = trim(row.getString(0));
-  float nameH = 15;
   float pad = page1 ? 0 : 3;
   float bx = cx + pad;
-  float by = cy + nameH;
+  float by = cy + pad;
   float bw = cw - pad * 2;
-  float bh = ch - nameH - pad;
-
-  // name above the box
-  fill(INK);
-  textAlign(LEFT, TOP);
-  textFont(bodyFont);
-  drawFittedName(displayName(state), bx, cy + 1, bw);
+  float bh = ch - pad * 2;
 
   // urban = odd columns (3,5,7,9,11,13), rural = even (2,4,6,8,10,12)
   float[] urbanVals = { row.getFloat(3), row.getFloat(5), row.getFloat(7), row.getFloat(9), row.getFloat(11), row.getFloat(13) };
@@ -313,17 +306,32 @@ void drawStateBox(TableRow row, float cx, float cy, float cw, float ch) {
 
 // One half = the six measures stacked and normalized to fill the height.
 // useTone: true = page 2's urban-lighter/rural-darker tone; false = page 1's flat metricBase hue.
+float ZERO_GAP = 4; // fixed height reserved for a zero-valued measure, painted as background
+
 void drawHalf(float[] vals, float hx, float hy, float hw, float hh, String state, String pop, boolean useTone) {
   float sum = 0;
-  for (float v : vals) sum += v;
+  int zeroCount = 0;
+  for (float v : vals) {
+    sum += v;
+    if (v <= 0) zeroCount++;
+  }
   if (sum <= 0) return;
+
+  float reserved = zeroCount * ZERO_GAP;
+  float usableH = hh - reserved;
 
   float yy = hy;
   noStroke();
   for (int m = 0; m < 6; m++) {
-    float segH = vals[m] / sum * hh;
-    color c = useTone ? (pop.equals("Urban") ? urban(metricBase[m]) : rural(metricBase[m])) : metricBase[m];
-    fill(c);
+    float segH;
+    if (vals[m] <= 0) {
+      segH = ZERO_GAP;
+      fill(BG); // zero value: same colour as the page background, not a collapsed 0px band
+    } else {
+      segH = vals[m] / sum * usableH;
+      color c = useTone ? (pop.equals("Urban") ? urban(metricBase[m]) : rural(metricBase[m])) : metricBase[m];
+      fill(c);
+    }
     rect(hx, yy, hw, segH);
     segs.add(new Seg(hx, yy, hw, segH, state, pop, measureNames[m], vals[m]));
     yy += segH;
@@ -355,25 +363,6 @@ void stitchLine(float x1, float y1, float x2, float y2, float dash, float gap) {
     float et = min(t + dash, d);
     line(x1 + ux * t, y1 + uy * t, x1 + ux * et, y1 + uy * et);
   }
-}
-
-// Shorten the longest names so they stay legible above the box
-String displayName(String full) {
-  if (full.indexOf("Andaman") >= 0) return "Andaman";
-  if (full.indexOf("Dadra") >= 0) return "Dadra & N.H.";
-  return full;
-}
-
-// Draw a name, shrinking the size until it fits the box width
-void drawFittedName(String name, float x, float y, float maxW) {
-  float ts = 9.5;
-  while (ts > 6) {
-    textSize(ts);
-    if (textWidth(name) <= maxW) break;
-    ts -= 0.5;
-  }
-  textSize(ts);
-  text(name, x, y);
 }
 
 // Tooltip for whichever filled band the mouse is over

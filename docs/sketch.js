@@ -16,13 +16,21 @@ const measureNames = [
   "Worked & paid in cash", "Owns a house / land", "Bank / savings account"
 ];
 
-const headingFont = 'Georgia, "Times New Roman", serif';
-const bodyFont = 'Helvetica, Arial, sans-serif';
+// Real embedded font files for the heading — p5's textFont() can silently fail
+// on a CSS font-family string that mixes commas and quotes (e.g. 'Georgia,
+// "Times New Roman", serif'), falling back to the browser default with no
+// warning. Loading actual .ttf files sidesteps that entirely and guarantees
+// the same look on every browser, matching the Processing version's real
+// italic/regular font objects.
+let headingFontRegular, headingFontItalic;
+const bodyFont = "Helvetica, Arial, sans-serif";
 
 let segs = [];
 
 function preload() {
   table = loadTable("Urban Rural Data Cleaned.csv", "csv", "header");
+  headingFontRegular = loadFont("fonts/PlayfairDisplay-Regular.ttf");
+  headingFontItalic = loadFont("fonts/PlayfairDisplay-Italic.ttf");
 }
 
 function setup() {
@@ -168,12 +176,11 @@ function drawHeading() {
   textAlign(LEFT, TOP);
 
   fill(INK);
-  textFont(headingFont);
-  textStyle(ITALIC);
+  textFont(headingFontItalic);
   textSize(sz);
   const w1 = textWidth("Penn");
   text("Penn", leftColX, titleY);
-  textStyle(NORMAL);
+  textFont(headingFontRegular);
   text("-madi", leftColX + w1, titleY);
 
   const desc =
@@ -197,8 +204,7 @@ function drawLegend() {
 
   fill(INK);
   textAlign(LEFT, TOP);
-  textFont(headingFont);
-  textStyle(NORMAL);
+  textFont(headingFontRegular);
   textSize(22);
   text("how to read", lx, y);
   y += 40;
@@ -278,19 +284,11 @@ function drawSections() {
 function drawStateBox(row, cx, cy, cw, ch) {
   const page1 = (page === 1);
   const state = (row.getString(0) || "").trim();
-  const nameH = 15;
   const pad = page1 ? 0 : 3;
   const bx = cx + pad;
-  const by = cy + nameH;
+  const by = cy + pad;
   const bw = cw - pad * 2;
-  const bh = ch - nameH - pad;
-
-  // name above the box
-  fill(INK);
-  textAlign(LEFT, TOP);
-  textFont(bodyFont);
-  textStyle(NORMAL);
-  drawFittedName(displayName(state), bx, cy + 1, bw);
+  const bh = ch - pad * 2;
 
   // urban = odd columns (3,5,7,9,11,13), rural = even (2,4,6,8,10,12)
   const urbanVals = [3, 5, 7, 9, 11, 13].map((c) => row.getNum(c));
@@ -316,17 +314,32 @@ function drawStateBox(row, cx, cy, cw, ch) {
 
 // One half = the six measures stacked and normalized to fill the height.
 // useTone: true = page 2's urban-lighter/rural-darker tone; false = page 1's flat metricBase hue.
+const ZERO_GAP = 4; // fixed height reserved for a zero-valued measure, painted as background
+
 function drawHalf(vals, hx, hy, hw, hh, state, pop, useTone) {
   let sum = 0;
-  for (const v of vals) sum += v;
+  let zeroCount = 0;
+  for (const v of vals) {
+    sum += v;
+    if (v <= 0) zeroCount++;
+  }
   if (sum <= 0) return;
+
+  const reserved = zeroCount * ZERO_GAP;
+  const usableH = hh - reserved;
 
   let yy = hy;
   noStroke();
   for (let m = 0; m < 6; m++) {
-    const segH = (vals[m] / sum) * hh;
-    const c = useTone ? (pop === "Urban" ? urban(metricBase[m]) : rural(metricBase[m])) : metricBase[m];
-    fill(c);
+    let segH;
+    if (vals[m] <= 0) {
+      segH = ZERO_GAP;
+      fill(BG); // zero value: same colour as the page background, not a collapsed 0px band
+    } else {
+      segH = (vals[m] / sum) * usableH;
+      const c = useTone ? (pop === "Urban" ? urban(metricBase[m]) : rural(metricBase[m])) : metricBase[m];
+      fill(c);
+    }
     rect(hx, yy, hw, segH);
     segs.push({ x: hx, y: yy, w: hw, h: segH, state, pop, label: measureNames[m], value: vals[m] });
     yy += segH;
@@ -358,25 +371,6 @@ function stitchLine(x1, y1, x2, y2, dash, gap) {
     const et = min(t + dash, d);
     line(x1 + ux * t, y1 + uy * t, x1 + ux * et, y1 + uy * et);
   }
-}
-
-// Shorten the longest names so they stay legible above the box
-function displayName(full) {
-  if (full.indexOf("Andaman") >= 0) return "Andaman";
-  if (full.indexOf("Dadra") >= 0) return "Dadra & N.H.";
-  return full;
-}
-
-// Draw a name, shrinking the size until it fits the box width
-function drawFittedName(name, x, y, maxW) {
-  let ts = 9.5;
-  while (ts > 6) {
-    textSize(ts);
-    if (textWidth(name) <= maxW) break;
-    ts -= 0.5;
-  }
-  textSize(ts);
-  text(name, x, y);
 }
 
 // Tooltip for whichever filled band the mouse (or a touch) is over
