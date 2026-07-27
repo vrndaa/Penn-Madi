@@ -8,7 +8,7 @@ let page = 1;
 let INNER = 60; // equal inner margin on all four sides
 let dividerX, leftColX, leftColRight, rightColX, rightColRight;
 
-let BG, INK, SUBINK, BOXLINE, THREAD, IKAT_BROWN, IKAT_LIGHT;
+let BG, INK, SUBINK, THREAD, IKAT_BROWN, IKAT_LIGHT;
 let TOOLTIP_INK; // tooltip stays dark-on-light regardless of page theme
 let metricBase = [];
 const measureNames = [
@@ -40,7 +40,6 @@ function setup() {
   BG = color(34, 34, 34);
   INK = color(255, 255, 255);
   SUBINK = color(255, 255, 255);
-  BOXLINE = color(203, 189, 152);
   THREAD = color(250, 244, 230);
   IKAT_BROWN = color(130, 25, 75);
   IKAT_LIGHT = color(248, 216, 230);
@@ -144,9 +143,9 @@ function diamond(cx, cy, s) {
 
 // Small "page 1/2" pill + toggle hint, top-right inside the border
 function pillBounds() {
-  const pw = 86, ph = 30;
+  const pw = 56, ph = 26;
   const px = width - INNER - pw;
-  const py = INNER * 0.4;
+  const py = INNER * 0.5;
   return { x: px, y: py, w: pw, h: ph };
 }
 
@@ -159,13 +158,8 @@ function drawPageIndicator() {
   textFont(bodyFont);
   textStyle(NORMAL);
   textAlign(CENTER, CENTER);
-  textSize(14);
+  textSize(13);
   text(page + " / 2", p.x + p.w / 2, p.y + p.h / 2 + 1);
-
-  fill(SUBINK);
-  textAlign(CENTER, TOP);
-  textSize(10);
-  text("space / tap", p.x + p.w / 2, p.y + p.h + 4);
 }
 
 // ---- Left column: title + description --------------------------------------
@@ -306,13 +300,15 @@ function drawStateBox(row, cx, cy, cw, ch) {
   drawHalf(ruralVals, bx + halfW, by, bw - halfW, bh, state, "Rural", useTone);
 
   if (!page1) {
-    // page 2: boxes are separated — faint outline, plus a small stitch at the urban/rural seam
-    noFill();
-    stroke(BOXLINE);
-    strokeWeight(1);
-    rect(bx, by, bw, bh);
-
+    // page 2: boxes are separated — a running-stitch border all the way
+    // around each box, plus a small stitch at the urban/rural seam
     stroke(THREAD);
+    strokeWeight(0.7);
+    stitchLine(bx, by, bx + bw, by, 4, 3);           // top
+    stitchLine(bx + bw, by, bx + bw, by + bh, 4, 3); // right
+    stitchLine(bx + bw, by + bh, bx, by + bh, 4, 3); // bottom
+    stitchLine(bx, by + bh, bx, by, 4, 3);           // left
+
     strokeWeight(0.6);
     stitchLine(bx + halfW, by, bx + halfW, by + bh, 3, 3);
   }
@@ -389,13 +385,20 @@ function displayName(full) {
 
 // Page 2 only: draw a name above the box, shrinking the size until it fits
 function drawFittedName(name, x, y, maxW) {
-  let ts = 11;
-  while (ts > 7) {
+  // Fixed size for a consistent look across every box; only shrink (with a
+  // higher floor, so it never gets illegibly small) if a name truly overflows.
+  const base = 10.5;
+  textSize(base);
+  if (textWidth(name) <= maxW) {
+    text(name, x, y);
+    return;
+  }
+  let ts = base;
+  while (ts > 9) {
     textSize(ts);
     if (textWidth(name) <= maxW) break;
     ts -= 0.5;
   }
-  textSize(ts);
   text(name, x, y);
 }
 

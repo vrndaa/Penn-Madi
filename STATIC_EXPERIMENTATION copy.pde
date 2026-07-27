@@ -23,7 +23,6 @@ float dividerX, leftColX, leftColRight, rightColX, rightColRight;
 color BG     = color(34, 34, 34);
 color INK    = color(255, 255, 255);
 color SUBINK = color(255, 255, 255);
-color BOXLINE = color(203, 189, 152); // faint outline around each state box (page 2 only)
 color THREAD  = color(250, 244, 230); // stitching thread color (reads on any fill hue)
 color TOOLTIP_INK = color(30, 26, 20); // tooltip text/border stay dark regardless of page theme
 
@@ -142,22 +141,17 @@ void diamond(float cx, float cy, float s) {
 
 // Small "page 1/2" pill + toggle hint, top-right inside the border
 void drawPageIndicator() {
-  float pw = 86, ph = 30;
+  float pw = 56, ph = 26;
   float px = width - INNER - pw;
-  float py = INNER * 0.4;
+  float py = INNER * 0.5;
   noStroke();
   fill(IKAT_BROWN);
   rect(px, py, pw, ph, ph / 2);
   fill(255);
   textFont(bodyFont);
   textAlign(CENTER, CENTER);
-  textSize(14);
+  textSize(13);
   text(page + " / 2", px + pw / 2, py + ph / 2 + 1);
-
-  fill(SUBINK);
-  textAlign(CENTER, TOP);
-  textSize(10);
-  text("space / tap", px + pw / 2, py + ph + 4);
 }
 
 // ---- Left column: title + description --------------------------------------
@@ -298,13 +292,15 @@ void drawStateBox(TableRow row, float cx, float cy, float cw, float ch) {
   drawHalf(ruralVals, bx + halfW, by, bw - halfW, bh, state, "Rural", useTone);    // right, no gap
 
   if (!page1) {
-    // page 2: boxes are separated — faint outline, plus a small stitch at the urban/rural seam
-    noFill();
-    stroke(BOXLINE);
-    strokeWeight(1);
-    rect(bx, by, bw, bh);
-
+    // page 2: boxes are separated — a running-stitch border all the way
+    // around each box, plus a small stitch at the urban/rural seam
     stroke(THREAD);
+    strokeWeight(0.7);
+    stitchLine(bx, by, bx + bw, by, 4, 3);           // top
+    stitchLine(bx + bw, by, bx + bw, by + bh, 4, 3); // right
+    stitchLine(bx + bw, by + bh, bx, by + bh, 4, 3); // bottom
+    stitchLine(bx, by + bh, bx, by, 4, 3);           // left
+
     strokeWeight(0.6);
     stitchLine(bx + halfW, by, bx + halfW, by + bh, 3, 3);
   }
@@ -382,13 +378,20 @@ String displayName(String full) {
 
 // Page 2 only: draw a name above the box, shrinking the size until it fits
 void drawFittedName(String name, float x, float y, float maxW) {
-  float ts = 11;
-  while (ts > 7) {
+  // Fixed size for a consistent look across every box; only shrink (with a
+  // higher floor, so it never gets illegibly small) if a name truly overflows.
+  float base = 10.5;
+  textSize(base);
+  if (textWidth(name) <= maxW) {
+    text(name, x, y);
+    return;
+  }
+  float ts = base;
+  while (ts > 9) {
     textSize(ts);
     if (textWidth(name) <= maxW) break;
     ts -= 0.5;
   }
-  textSize(ts);
   text(name, x, y);
 }
 
