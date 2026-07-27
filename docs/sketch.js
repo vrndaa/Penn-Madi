@@ -46,12 +46,12 @@ function setup() {
   TOOLTIP_INK = color(30, 26, 20); // tooltip text/border stay dark regardless of page theme
 
   metricBase = [
-    color(238, 25, 115),   // literate
-    color(238, 177, 211),  // schooling
-    color(236, 110, 56),   // attended
-    color(29, 100, 100),   // cash
-    color(252, 179, 31),   // house
-    color(91, 60, 141)     // bank
+    color(196, 63, 114),   // literate
+    color(201, 141, 187),  // schooling
+    color(199, 122, 78),   // attended
+    color(61, 118, 108),   // cash
+    color(201, 149, 76),   // house
+    color(92, 78, 130)     // bank
   ];
 
   computeLayout();
