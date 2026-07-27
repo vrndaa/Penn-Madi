@@ -20,14 +20,15 @@ float INNER = 60;   // equal inner margin on all four sides
 float dividerX, leftColX, leftColRight, rightColX, rightColRight;
 
 // Page theme (beige cloth ground; dark thread for text)
-color BG     = color(235, 226, 202);
-color INK    = color(45, 38, 30);
-color SUBINK = color(95, 84, 66);
+color BG     = color(34, 34, 34);
+color INK    = color(255, 255, 255);
+color SUBINK = color(255, 255, 255);
 color BOXLINE = color(203, 189, 152); // faint outline around each state box (page 2 only)
 color THREAD  = color(250, 244, 230); // stitching thread color (reads on any fill hue)
+color TOOLTIP_INK = color(30, 26, 20); // tooltip text/border stay dark regardless of page theme
 
-// Ikat border palette (pink)
-color IKAT_PINK  = color(224, 66, 140);
+// Ikat border palette (brown)
+color IKAT_BROWN = color(130, 25, 75);
 color IKAT_LIGHT = color(248, 216, 230);
 
 // One hue per measure (order: literate, schooling, attended, cash, house/land, bank)
@@ -72,12 +73,12 @@ void setup() {
 
   // Measure hues
   metricBase = new color[6];
-  metricBase[0] = color(200, 45, 60);   // literate  - red
-  metricBase[1] = color(150, 80, 165);  // schooling - purple
-  metricBase[2] = color(235, 110, 55);  // attended  - orange
-  metricBase[3] = color(30, 100, 100);  // cash      - teal
-  metricBase[4] = color(170, 50, 105);  // house     - wine
-  metricBase[5] = color(90, 60, 140);   // bank      - indigo
+  metricBase[0] = color(238, 25, 115);  // literate
+  metricBase[1] = color(238, 177, 211); // schooling
+  metricBase[2] = color(236, 110, 56);  // attended
+  metricBase[3] = color(29, 100, 100);  // cash
+  metricBase[4] = color(252, 179, 31);  // house
+  metricBase[5] = color(91, 60, 141);   // bank
 
   table = loadTable("Urban Rural Data Cleaned.csv", "header");
 
@@ -109,11 +110,11 @@ void draw() {
   drawTooltip();
 }
 
-// ---- Pink ikat border around the page -------------------------------------
+// ---- Brown ikat border around the page ------------------------------------
 void drawIkatBorder() {
   float bw = 30;
   noStroke();
-  fill(IKAT_PINK);
+  fill(IKAT_BROWN);
   rect(0, 0, width, bw);
   rect(0, height - bw, width, bw);
   rect(0, 0, bw, height);
@@ -134,7 +135,7 @@ void diamond(float cx, float cy, float s) {
   noStroke();
   fill(IKAT_LIGHT);
   quad(cx, cy - s / 2, cx + s / 2, cy, cx, cy + s / 2, cx - s / 2, cy);
-  fill(IKAT_PINK);
+  fill(IKAT_BROWN);
   float t = s * 0.42;
   quad(cx, cy - t / 2, cx + t / 2, cy, cx, cy + t / 2, cx - t / 2, cy);
 }
@@ -145,7 +146,7 @@ void drawPageIndicator() {
   float px = width - INNER - pw;
   float py = INNER * 0.4;
   noStroke();
-  fill(IKAT_PINK);
+  fill(IKAT_BROWN);
   rect(px, py, pw, ph, ph / 2);
   fill(255);
   textFont(bodyFont);
@@ -398,11 +399,11 @@ void drawTooltip() {
   if (tx + boxW > width) tx = mouseX - boxW - 12;
   if (ty + boxH > height) ty = mouseY - boxH - 12;
 
-  stroke(INK);
+  stroke(TOOLTIP_INK);
   strokeWeight(1);
   fill(250, 244, 232);
   rect(tx, ty, boxW, boxH);
-  fill(INK);
+  fill(TOOLTIP_INK);
   text(l1, tx + 6, ty + 5);
   text(l2, tx + 6, ty + 20);
 }

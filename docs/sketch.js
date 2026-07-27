@@ -8,7 +8,8 @@ let page = 1;
 let INNER = 60; // equal inner margin on all four sides
 let dividerX, leftColX, leftColRight, rightColX, rightColRight;
 
-let BG, INK, SUBINK, BOXLINE, THREAD, IKAT_PINK, IKAT_LIGHT;
+let BG, INK, SUBINK, BOXLINE, THREAD, IKAT_BROWN, IKAT_LIGHT;
+let TOOLTIP_INK; // tooltip stays dark-on-light regardless of page theme
 let metricBase = [];
 const measureNames = [
   "Women literate", "10+ yrs of schooling", "Attended school (age 6+)",
@@ -28,21 +29,22 @@ function setup() {
   createCanvas(windowWidth, windowHeight);
   pixelDensity(displayDensity());
 
-  BG = color(235, 226, 202);
-  INK = color(45, 38, 30);
-  SUBINK = color(95, 84, 66);
+  BG = color(34, 34, 34);
+  INK = color(255, 255, 255);
+  SUBINK = color(255, 255, 255);
   BOXLINE = color(203, 189, 152);
   THREAD = color(250, 244, 230);
-  IKAT_PINK = color(224, 66, 140);
+  IKAT_BROWN = color(130, 25, 75);
   IKAT_LIGHT = color(248, 216, 230);
+  TOOLTIP_INK = color(30, 26, 20); // tooltip text/border stay dark regardless of page theme
 
   metricBase = [
-    color(200, 45, 60),   // literate  - red
-    color(150, 80, 165),  // schooling - purple
-    color(235, 110, 55),  // attended  - orange
-    color(30, 100, 100),  // cash      - teal
-    color(170, 50, 105),  // house     - wine
-    color(90, 60, 140)    // bank      - indigo
+    color(238, 25, 115),   // literate
+    color(238, 177, 211),  // schooling
+    color(236, 110, 56),   // attended
+    color(29, 100, 100),   // cash
+    color(252, 179, 31),   // house
+    color(91, 60, 141)     // bank
   ];
 
   computeLayout();
@@ -107,7 +109,7 @@ function draw() {
 function drawIkatBorder() {
   const bw = 30;
   noStroke();
-  fill(IKAT_PINK);
+  fill(IKAT_BROWN);
   rect(0, 0, width, bw);
   rect(0, height - bw, width, bw);
   rect(0, 0, bw, height);
@@ -128,7 +130,7 @@ function diamond(cx, cy, s) {
   noStroke();
   fill(IKAT_LIGHT);
   quad(cx, cy - s / 2, cx + s / 2, cy, cx, cy + s / 2, cx - s / 2, cy);
-  fill(IKAT_PINK);
+  fill(IKAT_BROWN);
   const t = s * 0.42;
   quad(cx, cy - t / 2, cx + t / 2, cy, cx, cy + t / 2, cx - t / 2, cy);
 }
@@ -144,7 +146,7 @@ function pillBounds() {
 function drawPageIndicator() {
   const p = pillBounds();
   noStroke();
-  fill(IKAT_PINK);
+  fill(IKAT_BROWN);
   rect(p.x, p.y, p.w, p.h, p.h / 2);
   fill(255);
   textFont(bodyFont);
@@ -401,11 +403,11 @@ function drawTooltip() {
   if (tx + boxW > width) tx = mouseX - boxW - 12;
   if (ty + boxH > height) ty = mouseY - boxH - 12;
 
-  stroke(INK);
+  stroke(TOOLTIP_INK);
   strokeWeight(1);
   fill(250, 244, 232);
   rect(tx, ty, boxW, boxH);
-  fill(INK);
+  fill(TOOLTIP_INK);
   text(l1, tx + 6, ty + 5);
   text(l2, tx + 6, ty + 20);
 }
