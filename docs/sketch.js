@@ -37,21 +37,21 @@ function setup() {
   createCanvas(windowWidth, windowHeight);
   pixelDensity(displayDensity());
 
-  BG = color(34, 34, 34);
-  INK = color(255, 255, 255);
-  SUBINK = color(255, 255, 255);
+  BG = color(235, 226, 202);
+  INK = color(45, 38, 30);
+  SUBINK = color(95, 84, 66);
   THREAD = color(250, 244, 230);
-  IKAT_BROWN = color(130, 25, 75);
+  IKAT_BROWN = color(224, 66, 140);
   IKAT_LIGHT = color(248, 216, 230);
   TOOLTIP_INK = color(30, 26, 20); // tooltip text/border stay dark regardless of page theme
 
   metricBase = [
-    color(238, 25, 115),   // literate
-    color(238, 177, 211),  // schooling
-    color(236, 110, 56),   // attended
-    color(29, 100, 100),   // cash
-    color(252, 179, 31),   // house
-    color(91, 60, 141)     // bank
+    color(196, 63, 114),   // literate
+    color(201, 141, 187),  // schooling
+    color(199, 122, 78),   // attended
+    color(61, 118, 108),   // cash
+    color(201, 149, 76),   // house
+    color(92, 78, 130)     // bank
   ];
 
   computeLayout();
@@ -83,9 +83,10 @@ function buildRows() {
   }
 }
 
-// Page 2's tone scheme: urban keeps the base hue (same as page 1), rural is a
-// lightened version of it. Page 1 uses metricBase directly for both halves.
-function lighten(base) { return lerpColor(base, color(255), 0.42); }
+// Page 2's tone scheme: urban = a lighter tone of the hue, rural = a darker tone.
+// Page 1 uses metricBase directly (flat, same hue for both urban and rural).
+function urbanTone(base) { return lerpColor(base, color(255), 0.33); }
+function ruralTone(base) { return lerpColor(base, color(0), 0.30); }
 
 function keyPressed() {
   if (key === " ") page = (page === 1) ? 2 : 1;
@@ -111,34 +112,18 @@ function draw() {
   drawTooltip();
 }
 
-// ---- Pink ikat border around the page -------------------------------------
+// ---- Simple double-line border around the page ----------------------------
 function drawIkatBorder() {
-  const bw = 30;
-  noStroke();
-  fill(IKAT_BROWN);
-  rect(0, 0, width, bw);
-  rect(0, height - bw, width, bw);
-  rect(0, 0, bw, height);
-  rect(width - bw, 0, bw, height);
+  const outer = 14;
+  stroke(IKAT_BROWN);
+  strokeWeight(outer);
+  noFill();
+  rect(outer / 2, outer / 2, width - outer, height - outer);
 
-  const d = bw * 0.72;
-  for (let cx = bw; cx < width - bw + 1; cx += bw) {
-    diamond(cx, bw / 2, d);
-    diamond(cx, height - bw / 2, d);
-  }
-  for (let cy = bw; cy < height - bw + 1; cy += bw) {
-    diamond(bw / 2, cy, d);
-    diamond(width - bw / 2, cy, d);
-  }
-}
-
-function diamond(cx, cy, s) {
-  noStroke();
-  fill(IKAT_LIGHT);
-  quad(cx, cy - s / 2, cx + s / 2, cy, cx, cy + s / 2, cx - s / 2, cy);
-  fill(IKAT_BROWN);
-  const t = s * 0.42;
-  quad(cx, cy - t / 2, cx + t / 2, cy, cx, cy + t / 2, cx - t / 2, cy);
+  stroke(IKAT_LIGHT);
+  strokeWeight(3);
+  const inset = 20;
+  rect(inset, inset, width - inset * 2, height - inset * 2);
 }
 
 // Small "page 1/2" pill + toggle hint, top-right inside the border
@@ -234,8 +219,8 @@ function legendRow(lx, y, label, base, flat) {
     fill(base); rect(lx, y + 1, 16, 12);
     textX = lx + 26;
   } else {
-    fill(base); rect(lx, y + 1, 16, 12);                // urban = base hue = left half
-    fill(lighten(base)); rect(lx + 18, y + 1, 16, 12);   // rural = lightened = right half
+    fill(urbanTone(base)); rect(lx, y + 1, 16, 12);        // urban (lighter) = left half
+    fill(ruralTone(base)); rect(lx + 18, y + 1, 16, 12);   // rural (darker) = right half
     textX = lx + 44;
   }
   fill(INK);
@@ -276,26 +261,17 @@ function drawStateBox(row, cx, cy, cw, ch) {
   const page1 = (page === 1);
   const state = (row.getString(0) || "").trim();
   const pad = page1 ? 0 : 3;
-  const nameH = page1 ? 0 : 16; // page 2 only: a header strip above the box for the state name
   const bx = cx + pad;
-  const by = cy + pad + nameH;
+  const by = cy + pad;
   const bw = cw - pad * 2;
-  const bh = ch - pad * 2 - nameH;
-
-  if (!page1) {
-    fill(INK);
-    textAlign(LEFT, TOP);
-    textFont(bodyFont);
-    textStyle(NORMAL);
-    drawFittedName(displayName(state), bx, cy + pad, bw);
-  }
+  const bh = ch - pad * 2;
 
   // urban = odd columns (3,5,7,9,11,13), rural = even (2,4,6,8,10,12)
   const urbanVals = [3, 5, 7, 9, 11, 13].map((c) => row.getNum(c));
   const ruralVals = [2, 4, 6, 8, 10, 12].map((c) => row.getNum(c));
 
   const halfW = bw / 2;
-  const useTone = !page1; // page 1 = flat hue for both halves; page 2 = urban base / rural lightened
+  const useTone = !page1; // page 1 = flat hue for both halves; page 2 = urban lighter / rural darker
   drawHalf(urbanVals, bx, by, halfW, bh, state, "Urban", useTone);
   drawHalf(ruralVals, bx + halfW, by, bw - halfW, bh, state, "Rural", useTone);
 
@@ -339,8 +315,7 @@ function drawHalf(vals, hx, hy, hw, hh, state, pop, useTone) {
       c = BG; // zero value: same colour as the page background, not a collapsed 0px band
     } else {
       segH = (vals[m] / sum) * usableH;
-      // page 2: urban = the plain measure hue (same as page 1), rural = a lightened tint of it
-      c = useTone ? (pop === "Urban" ? metricBase[m] : lighten(metricBase[m])) : metricBase[m];
+      c = useTone ? (pop === "Urban" ? urbanTone(metricBase[m]) : ruralTone(metricBase[m])) : metricBase[m];
     }
     fill(c);
     rect(hx, yy, hw, segH);
@@ -374,32 +349,6 @@ function stitchLine(x1, y1, x2, y2, dash, gap) {
     const et = min(t + dash, d);
     line(x1 + ux * t, y1 + uy * t, x1 + ux * et, y1 + uy * et);
   }
-}
-
-// Page 2 only: shorten the longest names so they stay legible above the box
-function displayName(full) {
-  if (full.indexOf("Andaman") >= 0) return "Andaman";
-  if (full.indexOf("Dadra") >= 0) return "Dadra & N.H.";
-  return full;
-}
-
-// Page 2 only: draw a name above the box, shrinking the size until it fits
-function drawFittedName(name, x, y, maxW) {
-  // Fixed size for a consistent look across every box; only shrink (with a
-  // higher floor, so it never gets illegibly small) if a name truly overflows.
-  const base = 10.5;
-  textSize(base);
-  if (textWidth(name) <= maxW) {
-    text(name, x, y);
-    return;
-  }
-  let ts = base;
-  while (ts > 9) {
-    textSize(ts);
-    if (textWidth(name) <= maxW) break;
-    ts -= 0.5;
-  }
-  text(name, x, y);
 }
 
 // Tooltip for whichever filled band the mouse (or a touch) is over

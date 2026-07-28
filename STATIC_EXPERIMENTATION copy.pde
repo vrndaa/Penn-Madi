@@ -20,14 +20,14 @@ float INNER = 60;   // equal inner margin on all four sides
 float dividerX, leftColX, leftColRight, rightColX, rightColRight;
 
 // Page theme (beige cloth ground; dark thread for text)
-color BG     = color(34, 34, 34);
-color INK    = color(255, 255, 255);
-color SUBINK = color(255, 255, 255);
+color BG     = color(235, 226, 202);
+color INK    = color(45, 38, 30);
+color SUBINK = color(95, 84, 66);
 color THREAD  = color(250, 244, 230); // stitching thread color (reads on any fill hue)
 color TOOLTIP_INK = color(30, 26, 20); // tooltip text/border stay dark regardless of page theme
 
 // Ikat border palette (brown)
-color IKAT_BROWN = color(130, 25, 75);
+color IKAT_BROWN = color(224, 66, 140);
 color IKAT_LIGHT = color(248, 216, 230);
 
 // One hue per measure (order: literate, schooling, attended, cash, house/land, bank)
@@ -39,7 +39,8 @@ String[] measureNames = {
 
 // Page 2's tone scheme: urban keeps the base hue (same as page 1), rural is a
 // lightened version of it. Page 1 uses metricBase directly for both halves.
-color lighten(color base) { return lerpColor(base, color(255), 0.42); }
+color urbanTone(color base) { return lerpColor(base, color(255), 0.33); }
+color ruralTone(color base) { return lerpColor(base, color(0), 0.30); }
 
 // Filled segments recorded each frame so we can show a tooltip on hover
 class Seg {
@@ -111,32 +112,16 @@ void draw() {
 
 // ---- Brown ikat border around the page ------------------------------------
 void drawIkatBorder() {
-  float bw = 30;
-  noStroke();
-  fill(IKAT_BROWN);
-  rect(0, 0, width, bw);
-  rect(0, height - bw, width, bw);
-  rect(0, 0, bw, height);
-  rect(width - bw, 0, bw, height);
+  float outer = 14;
+  stroke(IKAT_BROWN);
+  strokeWeight(outer);
+  noFill();
+  rect(outer / 2, outer / 2, width - outer, height - outer);
 
-  float d = bw * 0.72;
-  for (float cx = bw; cx < width - bw + 1; cx += bw) {
-    diamond(cx, bw / 2, d);
-    diamond(cx, height - bw / 2, d);
-  }
-  for (float cy = bw; cy < height - bw + 1; cy += bw) {
-    diamond(bw / 2, cy, d);
-    diamond(width - bw / 2, cy, d);
-  }
-}
-
-void diamond(float cx, float cy, float s) {
-  noStroke();
-  fill(IKAT_LIGHT);
-  quad(cx, cy - s / 2, cx + s / 2, cy, cx, cy + s / 2, cx - s / 2, cy);
-  fill(IKAT_BROWN);
-  float t = s * 0.42;
-  quad(cx, cy - t / 2, cx + t / 2, cy, cx, cy + t / 2, cx - t / 2, cy);
+  stroke(IKAT_LIGHT);
+  strokeWeight(3);
+  float inset = 20;
+  rect(inset, inset, width - inset * 2, height - inset * 2);
 }
 
 // Small "page 1/2" pill + toggle hint, top-right inside the border
@@ -227,8 +212,8 @@ float legendRow(float lx, float y, String label, color base, boolean flat) {
     fill(base); rect(lx, y + 1, 16, 12);
     textX = lx + 26;
   } else {
-    fill(base);          rect(lx, y + 1, 16, 12);        // urban = base hue = left half
-    fill(lighten(base)); rect(lx + 18, y + 1, 16, 12);   // rural = lightened = right half
+    fill(urbanTone(base)); rect(lx, y + 1, 16, 12);        // urban (lighter) = left half
+    fill(ruralTone(base)); rect(lx + 18, y + 1, 16, 12);   // rural (darker) = right half
     textX = lx + 44;
   }
   fill(INK);
@@ -269,18 +254,10 @@ void drawStateBox(TableRow row, float cx, float cy, float cw, float ch) {
   boolean page1 = (page == 1);
   String state = trim(row.getString(0));
   float pad = page1 ? 0 : 3;
-  float nameH = page1 ? 0 : 16; // page 2 only: a header strip above the box for the state name
   float bx = cx + pad;
-  float by = cy + pad + nameH;
+  float by = cy + pad;
   float bw = cw - pad * 2;
-  float bh = ch - pad * 2 - nameH;
-
-  if (!page1) {
-    fill(INK);
-    textAlign(LEFT, TOP);
-    textFont(bodyFont);
-    drawFittedName(displayName(state), bx, cy + pad, bw);
-  }
+  float bh = ch - pad * 2;
 
   // urban = odd columns (3,5,7,9,11,13), rural = even (2,4,6,8,10,12)
   float[] urbanVals = { row.getFloat(3), row.getFloat(5), row.getFloat(7), row.getFloat(9), row.getFloat(11), row.getFloat(13) };
@@ -332,8 +309,7 @@ void drawHalf(float[] vals, float hx, float hy, float hw, float hh, String state
       c = BG; // zero value: same colour as the page background, not a collapsed 0px band
     } else {
       segH = vals[m] / sum * usableH;
-      // page 2: urban = the plain measure hue (same as page 1), rural = a lightened tint of it
-      c = useTone ? (pop.equals("Urban") ? metricBase[m] : lighten(metricBase[m])) : metricBase[m];
+      c = useTone ? (pop.equals("Urban") ? urbanTone(metricBase[m]) : ruralTone(metricBase[m])) : metricBase[m];
     }
     fill(c);
     rect(hx, yy, hw, segH);
@@ -367,32 +343,6 @@ void stitchLine(float x1, float y1, float x2, float y2, float dash, float gap) {
     float et = min(t + dash, d);
     line(x1 + ux * t, y1 + uy * t, x1 + ux * et, y1 + uy * et);
   }
-}
-
-// Page 2 only: shorten the longest names so they stay legible above the box
-String displayName(String full) {
-  if (full.indexOf("Andaman") >= 0) return "Andaman";
-  if (full.indexOf("Dadra") >= 0) return "Dadra & N.H.";
-  return full;
-}
-
-// Page 2 only: draw a name above the box, shrinking the size until it fits
-void drawFittedName(String name, float x, float y, float maxW) {
-  // Fixed size for a consistent look across every box; only shrink (with a
-  // higher floor, so it never gets illegibly small) if a name truly overflows.
-  float base = 10.5;
-  textSize(base);
-  if (textWidth(name) <= maxW) {
-    text(name, x, y);
-    return;
-  }
-  float ts = base;
-  while (ts > 9) {
-    textSize(ts);
-    if (textWidth(name) <= maxW) break;
-    ts -= 0.5;
-  }
-  text(name, x, y);
 }
 
 // Tooltip for whichever filled band the mouse is over
