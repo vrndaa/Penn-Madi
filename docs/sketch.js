@@ -114,16 +114,32 @@ function draw() {
 
 // ---- Simple double-line border around the page ----------------------------
 function drawIkatBorder() {
-  const outer = 14;
-  stroke(IKAT_BROWN);
-  strokeWeight(outer);
-  noFill();
-  rect(outer / 2, outer / 2, width - outer, height - outer);
+  const bw = 30;
+  noStroke();
+  fill(IKAT_BROWN);
+  rect(0, 0, width, bw);
+  rect(0, height - bw, width, bw);
+  rect(0, 0, bw, height);
+  rect(width - bw, 0, bw, height);
 
-  stroke(IKAT_LIGHT);
-  strokeWeight(3);
-  const inset = 20;
-  rect(inset, inset, width - inset * 2, height - inset * 2);
+  const d = bw * 0.72;
+  for (let cx = bw; cx < width - bw + 1; cx += bw) {
+    diamond(cx, bw / 2, d);
+    diamond(cx, height - bw / 2, d);
+  }
+  for (let cy = bw; cy < height - bw + 1; cy += bw) {
+    diamond(bw / 2, cy, d);
+    diamond(width - bw / 2, cy, d);
+  }
+}
+
+function diamond(cx, cy, s) {
+  noStroke();
+  fill(IKAT_LIGHT);
+  quad(cx, cy - s / 2, cx + s / 2, cy, cx, cy + s / 2, cx - s / 2, cy);
+  fill(IKAT_BROWN);
+  const t = s * 0.42;
+  quad(cx, cy - t / 2, cx + t / 2, cy, cx, cy + t / 2, cx - t / 2, cy);
 }
 
 // Small "page 1/2" pill + toggle hint, top-right inside the border
@@ -261,10 +277,19 @@ function drawStateBox(row, cx, cy, cw, ch) {
   const page1 = (page === 1);
   const state = (row.getString(0) || "").trim();
   const pad = page1 ? 0 : 3;
+  const nameH = page1 ? 0 : 16; // page 2 only: a header strip above the box for the state name
   const bx = cx + pad;
-  const by = cy + pad;
+  const by = cy + pad + nameH;
   const bw = cw - pad * 2;
-  const bh = ch - pad * 2;
+  const bh = ch - pad * 2 - nameH;
+
+  if (!page1) {
+    fill(INK);
+    textAlign(LEFT, TOP);
+    textFont(bodyFont);
+    textStyle(NORMAL);
+    drawFittedName(displayName(state), bx, cy + pad, bw);
+  }
 
   // urban = odd columns (3,5,7,9,11,13), rural = even (2,4,6,8,10,12)
   const urbanVals = [3, 5, 7, 9, 11, 13].map((c) => row.getNum(c));
@@ -349,6 +374,31 @@ function stitchLine(x1, y1, x2, y2, dash, gap) {
     const et = min(t + dash, d);
     line(x1 + ux * t, y1 + uy * t, x1 + ux * et, y1 + uy * et);
   }
+}
+
+// Page 2 only: shorten the longest names so they stay legible above the box
+function displayName(full) {
+  if (full.indexOf("Andaman") >= 0) return "Andaman";
+  if (full.indexOf("Dadra") >= 0) return "Dadra & N.H.";
+  return full;
+}
+
+// Page 2 only: draw a name above the box at a consistent size, only shrinking
+// (with a floor) when a name would otherwise overflow its box width.
+function drawFittedName(name, x, y, maxW) {
+  const base = 11;
+  textSize(base);
+  if (textWidth(name) <= maxW) {
+    text(name, x, y);
+    return;
+  }
+  let ts = base;
+  while (ts > 9) {
+    textSize(ts);
+    if (textWidth(name) <= maxW) break;
+    ts -= 0.5;
+  }
+  text(name, x, y);
 }
 
 // Tooltip for whichever filled band the mouse (or a touch) is over
